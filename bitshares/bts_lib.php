@@ -61,7 +61,7 @@ function btsCurl($url, $post, $rpcUser, $rpcPass, $rpcPort)
 
 	$responseString = curl_exec($curl);
   
-    if($responseString == false)
+    if($responseString === false)
     {
     
     $response['error'] = curl_error($curl);
@@ -83,9 +83,9 @@ function btsCurl($url, $post, $rpcUser, $rpcPass, $rpcPort)
 	curl_close($curl);
 	return $response;
 }
-function btsCreateEHASH($account,$orderId, $price, $currency)
+function btsCreateEHASH($account,$orderId, $price, $asset, $salt)
 {
-  $string = $account.$orderId.$price.btsCurrencyToAsset($currency).'WHMCS53';
+  $string = $account.$orderId.$price.$asset.$salt;
   return substr(md5($string), 0, 12);
 }
 
@@ -114,10 +114,10 @@ function btsCreateEHASH($account,$orderId, $price, $currency)
  *
  * @return array
  */
-function btsCreateInvoice($account, $orderId, $amount, $price, $currency)
+function btsCreateInvoice($account, $orderId, $amount, $price, $asset, $memo)
 {
-  $memoHash = btsCreateEHASH($account, $orderId, $price,$currency);
-	$response = array('url' => btsCreatePaymentURL($account, $amount, $currency, $memoHash));
+  
+	$response = array('url' => btsCreatePaymentURL($account, $amount, $asset, $memo));
   $response['orderEHASH'] = $memoHash;
 	return $response;
 }
@@ -133,15 +133,19 @@ function btsGetAssetNameById($assetId, $rpcUser, $rpcPass, $rpcPort)
   }
   return $response['result']['symbol'];
 }
-function btsCreatePaymentURL($account, $amount, $currency, $memoHash)
+function btsCreateMemo($hash)
 {
-  return 'bts:'.$account.'/transfer/amount/'.$amount.'/asset/'.btsCurrencyToAsset($currency).'/memo/E-HASH:'.$memoHash;
+  return 'E-HASH:'.$hash;
+}
+function btsCreatePaymentURL($account, $amount, $asset, $memo)
+{
+  return 'bts:'.$account.'/transfer/amount/'.$amount.'/asset/'.$asset.'/memo/'.$memo;
 }
 function btsCurrencyToAsset($currency)
 {
-  if($currency == 'BTS')
+  if($currency === 'BTS')
      return $currency;
-  if(strlen($currency) > 3 && strncmp($currency,'bit', 3) == 0 || strncmp($currency, 'Bit', 3) == 0)
+  if(strlen($currency) > 3 && strncmp($currency,'bit', 3) === 0)
      return 'Bit'.substr($currency, 3);
   return 'Bit'.$currency;
 }
@@ -152,7 +156,7 @@ function btsCurrencyToAsset($currency)
  *
  * @return array
  */
-function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort, $demoMode)
+function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort, $hashSalt, $demoMode)
 {
    $retArray = array();
    $response =  btsGetTransactions($orderList, $rpcUser, $rpcPass, $rpcPort);
@@ -163,12 +167,12 @@ function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort,
     foreach ($orderList as $order) {
       $orderId = $order['order_id'];
       $priceToPay = $order['total'];
-      $currency = $order['currency_code'];
-      $asset = btsCurrencyToAsset($currency);
+      $asset = $order['asset'];
       $orderTime = $order['date_added'];
       $timeStamp = 0;
       $trxId = 0;
-      $orderEHASH = btsCreateEHASH($account, $orderId, $priceToPay, $currency);
+      $orderEHASH = btsCreateEHASH($account, $orderId, $priceToPay, $asset, $hashSalt);
+      $openOrderMemo = btsCreateMemo($orderEHASH);
       $accumulatedAmountPaid = 0;
       if(!array_key_exists('result', $response))
       {
@@ -180,7 +184,7 @@ function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort,
         
         // make sure the order was placed before it was paid on the blockchain, sanity check incase hash's match but tx is for wrong order.
         // also make sure this tx is confirmed on the blockchain before processing it
-        if($txinfo['is_confirmed'] == true)
+        if($txinfo['is_confirmed'] === true)
         {
 	        $timeStamp = $txinfo['timestamp'];
           $trxId = $txinfo['trx_id'];
@@ -201,8 +205,8 @@ function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort,
             {
               continue;
             }
-            // if this TX doesn't have the hash of the open order we are checking, skip this order
-            if(strpos($memo, $orderEHASH) == FALSE)
+            // order memo must match this memo
+            if($memo != $openOrderMemo)
             {
               continue;
             }
@@ -233,7 +237,7 @@ function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort,
         else
         {
           $ret['status'] = 'processing';
-          $ret['url'] = btsCreatePaymentURL($account,($priceToPay-$accumulatedAmountPaid),$currency,$orderEHASH);
+          $ret['url'] = btsCreatePaymentURL($account,($priceToPay-$accumulatedAmountPaid),$asset,$orderEHASH);
         }
       
         array_push($retArray, $ret);
