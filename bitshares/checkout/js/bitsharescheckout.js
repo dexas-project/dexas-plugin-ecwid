@@ -1,14 +1,5 @@
-(function($) {
-    var payClicked = false;
-    var paid = false;
-    var paymentTimer = null;
-    $.noty.defaults.layout = "topRight";
-    $.noty.defaults.theme = "relax";
-    $.noty.defaults.timeout = 10000;
-    $.noty.defaults.animation.open = "animated flipInX";
-    $.noty.defaults.animation.close = "animated flipOutX";
-    $.noty.defaults.animation.easing = "swing";
-    function saveAs(uri, filename) {
+
+    function btsSaveAs(uri, filename) {
         var link = document.createElement('a');
         if (typeof link.download === 'string') {
             document.body.appendChild(link); // Firefox requires the link to be in the body
@@ -20,54 +11,31 @@
             location.replace(uri);
         }
     }
-    function startPaymentTracker(serialized)
+                
+    function btsShowSuccess()
     {
-        if(paymentTimer)
-            clearInterval(paymentTimer);
-        paymentTimer = setInterval(function() {
-            $.ajax({
-                url: "integration/bitsharescheckout_verifysingleorder.php",
-                type: 'post',
-                dataType: 'json',
-                data: serialized,
-                beforeSend:function(){
-              
-                },
-                complete:function(){
-              
-                },   
-                error:function(jqXHR, textStatus, errorThrown){
-                    var res = textStatus;
-                    if(jqXHR.responseText !== "")
-                    {
-                        res = jqXHR.responseText;
-                    }
-                    var n = noty({
-                        text: res,
-                        type: 'error'
-                    });
-                    clearInterval(paymentTimer);               
-                },                              
-                success: function(response, textStatus, jqXHR) {
-                    var textresponse = "Payment recieved...";
-                     
-                    if(response.error)
-                    {
-                       var n = noty({
-                            text: response.error,
-                            type: 'error'
-                        });                    
-                    }
-                    else 
-                    {
-                                  
-                    }
-                                                      
-                }
-            });
-        }, 10000);                    
+        globalRedirectDialog.open();  
+        var countdown = 10;
+        if(globalRedirectCountdownTimer)
+            clearInterval(globalRedirectCountdownTimer);
+        globalRedirectCountdownTimer = setInterval(function() {
+            countdown--;
+            $('#redirectCountdown').text("You will be automatically redirected back to the merchant site within " + countdown + " seconds...");
+            if(countdown <= 0)
+            { 
+                clearInterval(globalRedirectCountdownTimer);       
+                ajaxSuccess("integration/bitsharescheckout_success.php", $('#btsForm').serialize());
+            }
+            
+        }, 1000); 
+    }   
+    function btsShowPaymentComplete()
+    {
+        globalPaid = true;
+        btsShowSuccess();
     }
-    function exportTableToCSV($table, filename) {
+   
+    function btsExportTableToCSV($table, filename) {
 
         var $rows = $table.find('tr:has(td)'),
 
@@ -99,261 +67,114 @@
 
             // Data URI
             csvData = 'data:application/csv;charset=utf-8,' + encodeURIComponent(csv);
-            saveAs(csvData, filename);
+            btsSaveAs(csvData, filename);
             
         
     }    
-    var showPaymentStatus = function()
+    var btsShowPaymentStatus = function()
     {
-            BootstrapDialog.show({
-                title: 'Payment Status',
-                message: $('<div></div>').load('template/paymentstatus.html'),
-                autodestroy: false,
-                closable: true,
-                closeByBackdrop: false,
-                buttons: [
-                    {
-                    cssClass: 'btn-info',
-                    label: 'Export CSV',
-                    icon: 'fa fa-file-excel-o ',
-                    action: function(dialogItself){
-                        exportTableToCSV.apply(this, [$('#paymentStatusTable>table'), 'export.csv']);
-                    }},
-                    {         
-                    label: 'Close',
-                    cssClass: 'btn-primary',
-                    action: function(dialogItself){
-                        dialogItself.close();
-                    }
-                }]    
-            });    
-    }
-    var showPaymentFailedStatus = function()
-    {
-            BootstrapDialog.show({
-                title: 'Payment Status',
-                message: $('<div></div>').load('template/paymentfailedstatus.html'),
-                autodestroy: false,
-                closable: true,               
-                buttons: [
-                    {         
-                    label: 'Close',
-                    cssClass: 'btn-primary',
-                    action: function(dialogItself){
-                        dialogItself.close();
-                    }
-                }]    
-            });    
+     
+        globalPaymentDialog.open();
+        
+        
     }
     
-    var showNoStatus = function()
+    var btsUpdateOnChange = function()
     {
-            BootstrapDialog.show({
-                title: 'Payment Status',
-                message: $('<div></div>').load('template/nostatus.html'),
-                autodestroy: false,
-                closable: true,                
-                buttons: [
-                    {         
-                    label: 'Close',
-                    cssClass: 'btn-primary',
-                    action: function(dialogItself){
-                        dialogItself.close();
-                    }
-                }]    
-            });    
-    }
-    var updatePaymentStatusToSuccess = function()
-    {
-               
+        if(globalScanInProgress)
+        {
+            BootstrapDialog.warning('You have cancelled the current payment scan!');            
+        }    
+        btsUpdateUIScanClear();    
     }    
-    
-    var btsCreateEHASHJS = function(account,orderId, price, asset, salt)
-    {
-        var mystring = account+orderId+price+asset+salt;
-        mystring = md5(mystring);
-        return mystring.substring(0, 12);    
-    }
-    var btsCreateMemoJS = function(ehash)
-    {
-      return "E-HASH:"+ehash;
-    }
-    var updateOnChange = function()
-    {
-        var account = $("#accountName").val();
-        var orderid = $("#order_id").val();
-        var total = $("#total").val();
-        var asset = $("#asset").val();
-        var salt = $("#hashSalt").val();
-        var hash = btsCreateEHASHJS(account, orderid, total, asset, salt);
-        $("#memo").val(btsCreateMemoJS(hash));
-    }
-    $("input[type='text'], input[type='number']" ).change(function() {
-      updateOnChange();
-    });
-    $('#payment').click(function (e) { 
-        e.preventDefault();
-        if($('#paymentStatus').hasClass('fa-times'))
+
+    $("input[type='text'], input[type='number']" ).change(function(e) {
+      btsUpdateOnChange();
+    });     
+        
+    var btsPayClick = function() {
+                
+        if(globalPaid)
         {
-            showPaymentFailedStatus();
+            BootstrapDialog.danger('This order has already been paid for!');
+        }    
+        else
+        {
+            ajaxPay($('#btsForm').serialize());
+        }    
+
+    }  
+      
+    var btsScanClick = function () {
+        if(globalScanInProgress)
+        {
+            if(globalPaymentTimer)
+                clearInterval(globalPaymentTimer);
+            btsUpdateUIScanCancelled();            
         }
-        else if($('#paymentStatus').hasClass('fa-refresh'))
+        else
         {
-            showPaymentStatus();
+            
+            btsStartPaymentTracker($('#btsForm').serialize(), PaymentScanEnum.FULLSCAN);
         }
-        else if(!payClicked)
-        {
-            showNoStatus();
-        } 
-        else if(payClicked && $('#paymentStatus').hasClass('fa-check'))
-        {
-            showPaymentStatus();
-            updatePaymentStatusToSuccess();
-        }
-    });    
+    }
+    	
+    $('#btsForm').submit(function(e) {
+        if (e.preventDefault) { e.preventDefault(); } else { e.returnValue = false; } 
+             
+        ajaxLookup($('#btsForm').serialize());
+
+    });	    
     $('#return').click(function (e) { 
-        e.preventDefault(); 
-        // temp enable disabled controls so serialize can return disabled data
-        var myform = $('#btsForm');
-
-         // Find disabled inputs, and remove the "disabled" attribute
-        var disabled = myform.find(':input:disabled').removeAttr('disabled');
-
-         // serialize the form
-        var serialized = myform.serialize();
-        var myurl = "integration/bitsharescheckout_cancel.php";
-        if(paid)
+        if (e.preventDefault) { e.preventDefault(); } else { e.returnValue = false; }       
+      
+        if(globalPaid)
         {
-            myurl = "integration/bitsharescheckout_success.php";
+            ajaxSuccess("integration/bitsharescheckout_success.php", $('#btsForm').serialize());
         }
-         // re-disabled the set of inputs that you previously enabled
-        disabled.attr('disabled','disabled');         
-        $.ajax({
-                url: myurl,
-                type: 'post',
-                dataType: 'json',
-                data: serialized,
-                beforeSend:function(){
-              
-                },
-                complete:function(){
-              
-                },   
-                error:function(jqXHR, textStatus, errorThrown){
-                    var res = textStatus;
-                    if(jqXHR.responseText !== "")
-                    {
-                        res = jqXHR.responseText;
-                    }
-                    var n = noty({
-                        text: res,
-                        type: 'error'
-                    });
-				    $('#returnIcon').addClass('fail');                                    
-                },                              
-                success: function(response, textStatus, jqXHR) {
-                    var textresponse = "Returning to checkout...";
-                     
-                  //  $('#returnIcon').removeClass('fail').addClass('success'); 
-                    if(response.error && !response.url)
-                    {
-                       var n = noty({
-                            text: response.error,
-                            type: 'error'
-                        });                    
-                    }
-                    else if(response.url)
-                    {
-                       textresponse += "If you are not redirected click <a href='"+response.url+"'>here</a>";
-                       var n = noty({
-                            text: textresponse,
-                            type: 'success',
-                        });
-                        window.location.href =  response.url;                 
-                    }
-                                                      
+        else
+        {
+            BootstrapDialog.confirm('This will cancel your order. Are you sure?', function(result){
+                if(result) {
+                    ajaxCancel("integration/bitsharescheckout_cancel.php", $('#btsForm').serialize());
+                }else {
+                    
                 }
-            });   
+            });            
+        }
+          
 		
-	});	
-   //hang on event of form with id=myform
-    $("#btsForm").submit(function(e) {
-
-        //prevent Default functionality
-        e.preventDefault();
-        // temp enable disabled controls so serialize can return disabled data
-        var myform = $('#btsForm');
-
-         // Find disabled inputs, and remove the "disabled" attribute
-        var disabled = myform.find(':input:disabled').removeAttr('disabled');
-
-         // serialize the form
-        var serialized = myform.serialize();
-
-         // re-disabled the set of inputs that you previously enabled
-        disabled.attr('disabled','disabled');      
-        //get the action-url of the form
-        var actionurl = e.currentTarget.action;
-
-        //do your own request an handle the results
-         $.ajax({
-                url: actionurl,
-                type: 'post',
-                dataType: 'json',
-                data: serialized,
-                beforeSend:function(){ 
-                   $('#paymentStatus').removeClass('fa-times fa-check fa-question').addClass('fa-refresh fa-spin');  
-                },
-                complete:function(){
-                   //$('#paymentStatus').removeClass('fa-refresh fa-spin'); 
-                },   
-                error:function(jqXHR, textStatus, errorThrown){
-                    var res = textStatus;
-                    if(jqXHR.responseText !== "")
-                    {
-                        res = jqXHR.responseText;
-                    }
-                    var n = noty({
-                        text: res,
-                        type: 'error'
-                    });
-                    $('#myForm .fa-robo').removeClass('success').addClass('fail');
-				    $('#myForm').addClass('fail');
-				    
-				    $('#paymentStatus').removeClass('fa-check fa-question fa-refresh fa-spin').addClass('fa-times');                 
-                },                              
-                success: function(response, textStatus, jqXHR) {
-                    var textresponse = "Payment processing..."
- 
-
-                    if(response.error && !response.url)
-                    {
-                       var n = noty({
-                            text: response.error,
-                            type: 'error'
-                        });                    
-                    }
-                    else if(response.url)
-                    {
-                       var n = noty({
-                            text: textresponse,
-                            type: 'success',
-                        });
-                        window.location.href =  response.url;                 
-                    }
-                    //$('#myForm .fa-robo').removeClass('fail').addClass('success');
-				    //$('#myForm').removeClass('fail').removeClass('animated');
-				    //$('#paymentStatus').removeClass('fa-times').addClass('fa-check'); 
-				    payClicked = true;
-				    startPaymentTracker(serialized);
-				    showPaymentStatus();                                            
-                }
-            });
-
-    });	
-
-
-})(jQuery);
+	});        
+    function btsStartPaymentTracker(serializedData, scanMode)
+    {
+        if(globalScanInProgress)
+            return;
+        if(scanMode == PaymentScanEnum.QUICKSCAN)
+        {
+            var progressToUpdate = 100;
+            ajaxScanChain(serializedData, progressToUpdate, scanMode);
+            
+        }
+        else if(scanMode == PaymentScanEnum.FULLSCAN)
+        {
+            var count = 0;
+            btsUpdateUIFullScan();
+                
+            if(globalPaymentTimer)
+                clearInterval(globalPaymentTimer);
+            globalPaymentTimer = setInterval(function() {
+                count++;
+                var progressToUpdate = 20+parseInt(80 * parseFloat(count / 12));
+                ajaxScanChain(serializedData, progressToUpdate);
+                // run for about 3 minutes
+                if(count >= 18)
+                {
+                    clearInterval(globalPaymentTimer);
+                    btsUpdateUIScanComplete();
+                }    
+            }, 10000); 
+        }                   
+    }
 
 
 

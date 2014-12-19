@@ -8,20 +8,16 @@ require '../../functions.php';
 $return = array();
 
 $memo = $_POST['memo'];
-$order_id = $_POST['order_id'];
-$total = $_POST['total'];
-$asset = $_POST['asset'];
-$trx_id = $_POST['trx_id'];
-$amount = $_POST['amount'];
-
-$memoHashSanity = btsCreateEHASH($accountName,$order_id, $total, $asset, $hashSalt);
-$memoSanity = btsCreateMemo($memoHashSanity);
-if ($memoSanity !== $memo) {
-	$return['error'] = 'Invalid memo';
+$balance = $_POST['balance'];
+$orderArray = getOrderFromOpenOrders($memo,'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR);
+if(count($orderArray) <= 0)
+{
+  $ret = array();
+  $ret['error'] = 'Could not find this order in the system, please review the Order ID and Order Hash';
   echo json_encode($ret);
-	die;
+  die;
 }
-$response = btsCreateInvoice($accountName, $order_id, $total,$total, $asset, $memo);
+$response = btsCreateInvoice($accountName, $orderArray[0]['order_id'], $balance, $orderArray[0]['total'], $orderArray[0]['asset'], $memo);
 if(array_key_exists('error', $response))
 {
     error_log($response['error']);
@@ -30,7 +26,6 @@ if(array_key_exists('error', $response))
     die("Error creating invoice");
 }
 else {	
-    saveToOpenOrders($_POST, '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR);
     $return['url'] = $response['url'];
     echo json_encode($return);
     die;

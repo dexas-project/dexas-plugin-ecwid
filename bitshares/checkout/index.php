@@ -41,49 +41,34 @@
 							  <i class="fa fa-robo"></i>
 							  <div><a href="bts:opencartdemo"><?php echo $_REQUEST['accountName']; ?></a></div>
 						  </div>
-						  <form name="btsForm" id="btsForm" action="integration/bitsharescheckout_pay.php">
-						  <input name="trx_id" id="trx_id" type="hidden" value=""></input>
+						  <form name="btsForm" id="btsForm" action="">
+						  <input type="hidden" id="balance" name="balance"  value="0">
 						  <div class="form-main">
 							  <div class="form-group">
 							  	<input type="hidden" id="accountName" name="accountName" value="<?php echo $_REQUEST['accountName']; ?>">
 							  	<div class="row">
-									<div class="col-xs-6">
-										<h5>Amount</h5>
-										<input type="number" step="any" min="0" id="total" name="total" class="form-control" required="required" value="<?php echo $_REQUEST['total']; ?>">
-									</div>
-									<div class="col-xs-6">
-										<h5>Asset</h5>
-										<input type="text" id="asset" name="asset" class="form-control" required="required" value="<?php echo $_REQUEST['asset']; ?>">
+									<div class="col-xs-12">
+										<h5>Order ID</h5>
+										<input type="number" id="order_id" name="order_id" class="form-control" title="The merchant Order Identification Number" required="required" value="<?php echo $_REQUEST['order_id']; ?>">
 									</div>
 								</div>
 							  	<div class="row">
-									<div class="col-xs-6">
-										<h5>Order ID</h5>
-										<input type="number" id="order_id" name="order_id" class="form-control" required="required" value="<?php echo $_REQUEST['order_id']; ?>">
-									</div>
-									<div class="col-xs-6">
-										<h5>Memo</h5>
-										<input name="hashSalt" id="hashSalt" type="hidden" value="<?php echo $_REQUEST['hashSalt']; ?>"></input>
-										<input name="metadata1" id="metadata1" type="hidden" value="<?php echo $_REQUEST['metadata1']; ?>"></input>
-                                        <input name="memo" id="memo" type="text" disabled title="You cannot edit the memo, it is auto-generated" class="form-control" required value="<?php echo $_REQUEST['memo']; ?>"></input>
+									<div class="col-xs-12">
+										<h5>Order Hash</h5>
+	                                    <input name="memo" id="memo" type="text" title="The transaction memo to distinguish payment for this order" class="form-control" required value="<?php echo $_REQUEST['memo']; ?>"></input>
 									</div>
 								</div>	  			
-							    
 							  </div>
-						    <button id="pay" type="submit" class="btn btn-block signin">Pay</button>
+						    <button id="payStatus" type="submit" class="btn btn-block signin"><i id="payStatusIcon" class="fa fa-search"></i>&nbsp;Lookup</button>
 						    </div>
 						    </form>
 							<div class="form-footer">
 								<div class="row">
-									<div class="col-xs-7">
+									<div class="col-xs-12">
 									    <form action="" method="POST">
 										    <i id="returnIcon" class="fa fa-shopping-cart"></i>
 										    <a href="#" id="return" name="return">Cancel and return to checkout</a>
 									    </form>
-									</div>
-									<div class="col-xs-5">
-										<i id="paymentStatus" class="fa fa-question"></i>
-										<a href="#" name="payment" id="payment">Payment Status</a>
 									</div>
 								</div>
 							</div>		
@@ -96,13 +81,16 @@
 </section>
 	  
     <!-- js library -->
-		<script type="text/javascript" src="js/jquery.min.js"></script>
-		<script type="text/javascript" src="js/jquery.localize.min.js"></script>
-		<script type="text/javascript" src="js/jquery.noty.packaged.min.js"></script>
-        <script type="text/javascript" src="js/bootstrap.min.js"></script>
-        <script type="text/javascript" src="js/dialog/bootstrap-dialog.min.js"></script>
-		<script type="text/javascript" src="js/waypoints.min.js"></script>
+		<script type="text/javascript" src="js/vendor/jquery.min.js"></script>
+		<script type="text/javascript" src="js/vendor/jquery.localize.min.js"></script>
+		<script type="text/javascript" src="js/vendor/jquery.noty.packaged.min.js"></script>
+        <script type="text/javascript" src="js/vendor/bootstrap.min.js"></script>
+        <script type="text/javascript" src="js/vendor/bootstrap-dialog.min.js"></script>
+		<script type="text/javascript" src="js/vendor/waypoints.min.js"></script>
 		<script type="text/javascript" src="js/md5.js"></script>
+		<script type="text/javascript" src="js/globals.js"></script>
+		<script type="text/javascript" src="js/uistates.js"></script>
+		<script type="text/javascript" src="js/ajax.js"></script>
 		<script type="text/javascript" src="js/bitsharescheckout.js"></script>
 		<script type="text/javascript">
 			(function($) {

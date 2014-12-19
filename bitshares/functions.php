@@ -20,12 +20,10 @@ function getOpenOrders($relativeDir)
         $total = fgets($fileHandle);
         $asset = fgets($fileHandle);
         $memo = fgets($memo);
-        $url = fgets($fileHandle);
         $newOrder['total'] = trim($total);
         $newOrder['asset'] = trim($asset);
         $newOrder['order_id'] = trim($id);
         $newOrder['memo'] = trim($memo);
-        $newOrder['url'] = trim($url);
         $newOrder['date_added'] = 0;
         array_push($openOrderList,$newOrder);
         fclose($fileHandle);
@@ -34,6 +32,17 @@ function getOpenOrders($relativeDir)
 	  closedir($handle); 
   }
   return $openOrderList;
+}
+
+function getOrderFromCompletedOrders($memo, $relativeDir)
+{
+  $orders = array();
+  $myorder = isOrderComplete($memo, $relativeDir);
+  if($myorder !== FALSE)
+  {
+    array_push($orders, $myorder);
+  }
+  return $orders;
 }
 function getOrderFromOpenOrders($memo, $relativeDir)
 {
@@ -45,12 +54,19 @@ function getOrderFromOpenOrders($memo, $relativeDir)
   }
   return $orders;
 }
+function saveToOpenCompleteLog($dataArray, $relativeDir)
+{
+  $data =  date('Y-m-d H:i:s').': '. PHP_EOL;
+  $data .= $dataArray['memo']. PHP_EOL;
+
+  // save bitshares invoice data in a file named after the ecwid invoice id
+  file_put_contents($relativeDir.'ordercomplete.inv', $data);
+}
 function saveToOpenOrders($dataArray, $relativeDir)
 {
   $data =  $dataArray['order_id']. PHP_EOL;
   $data .= $dataArray['total']. PHP_EOL;
   $data .= $dataArray['asset']. PHP_EOL;
-  $data .= $dataArray['metadata1']. PHP_EOL;
   $data .= $dataArray['memo']. PHP_EOL;
 
   // save bitshares invoice data in a file named after the ecwid invoice id
@@ -69,6 +85,33 @@ function removeInvFile($invFileName, $relativeDir)
 	  }
 	  closedir($handle); 
   }      
+}
+function isOrderComplete($memoToFind, $relativeDir)
+{
+
+  if ($handle = opendir($relativeDir)) {
+	  while (false !== ($file = readdir($handle))) { 
+		  if ($file != 'ordercomplete.inv')
+			  continue;
+      $fileHandle =  fopen($relativeDir.$file, 'r');
+      if($fileHandle)
+      {
+        
+        $valid = FALSE;
+        while (($buffer = fgets($handle)) !== false) {
+            if (strpos($buffer, $memoToFind) !== false) {
+                $valid = TRUE;
+                break; 
+            }      
+        }
+        fclose($fileHandle);
+        return $valid;
+      }
+      
+	  }
+	  closedir($handle); 
+  }      
+  return FALSE;
 }
 function doesOrderExist($memoToFind, $relativeDir)
 {
@@ -104,10 +147,10 @@ function postToEcwid($notice)
 	require 'config.php';
 	
 	$x_response_code = $notice['responseCode']; // 1=approved, 2=declined
-	$x_response_reason_code = $notice['responseReason']; // 1=approved, 2= declined
-	$x_trans_id = $notice['trxId'];
+	$x_response_reason_code = $notice['reasonCode']; // 1=approved, 2= declined
+	$x_trans_id = $notice['trx_id'];
 	$x_invoice_num = $notice['order_id']; 
-	$x_amount = $notice['amountReceived'];
+	$x_amount = $notice['amount'];
   $x_url = $notice['url'];
   $x_total = $notice['total'];
 	$string = $hashSalt.$login.$x_trans_id.$x_total;
@@ -119,14 +162,15 @@ function postToEcwid($notice)
 		"x_trans_id" => $x_trans_id,
 		"x_invoice_num" => $x_invoice_num,
 		"x_amount" => $x_amount,
-		"x_MD5_Hash" => $x_MD5_Hash,
+		"x_MD5_Hash" => $x_MD5_Hash
 		);
-
 	$ch = curl_init($x_url);
 
 	curl_setopt($ch, CURLOPT_POST, 1);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $datatopost);
-	//curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+  
+	
 	
 	$response = curl_exec($ch);
 	if ($response === false){

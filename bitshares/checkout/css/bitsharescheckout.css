@@ -208,6 +208,11 @@
   -webkit-animation: shake .5s linear;
   -moz-animation: shake .5s linear;
 }
+.bitshares.signin-main .shake {
+  animation: shake .5s linear 5;
+  -webkit-animation: shake .5s linear 5;
+  -moz-animation: shake .5s linear 5;
+}
 @media (max-width: 991px) {
   .bitshares.signin-main .wrap {
     padding-left: 0;

@@ -118,7 +118,11 @@ function btsCreateInvoice($account, $orderId, $amount, $price, $asset, $memo)
 {
   
 	$response = array('url' => btsCreatePaymentURL($account, $amount, $asset, $memo));
-  $response['orderEHASH'] = $memoHash;
+  $response['memo'] = $memo;
+  $response['account'] = $account;
+  $response['amount'] = $amount;
+  $response['total'] = $price;
+  $response['asset'] = $asset;
 	return $response;
 }
 function btsGetAssetNameById($assetId, $rpcUser, $rpcPass, $rpcPort)
@@ -174,6 +178,7 @@ function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort,
       $orderEHASH = btsCreateEHASH($account, $orderId, $priceToPay, $asset, $hashSalt);
       $openOrderMemo = btsCreateMemo($orderEHASH);
       $accumulatedAmountPaid = 0;
+      
       if(!array_key_exists('result', $response))
       {
         continue;
@@ -181,7 +186,7 @@ function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort,
 	
       foreach($response['result'] as $txinfo)
       {
-        
+        $amount = 0;
         // make sure the order was placed before it was paid on the blockchain, sanity check incase hash's match but tx is for wrong order.
         // also make sure this tx is confirmed on the blockchain before processing it
         if($txinfo['is_confirmed'] === true)
@@ -210,38 +215,42 @@ function btsVerifyOpenOrders($orderList, $account, $rpcUser, $rpcPass, $rpcPort,
             {
               continue;
             }
-            $accumulatedAmountPaid += ($tx['amount']['amount']/100000);
+            $amount += ($tx['amount']['amount']/100000);
+            
           }
+          $accumulatedAmountPaid += $amount;
         }
+        if($amount > 0)
+        {
+	        $ret = array();
+    	
+          $ret['order_id'] = $orderId;
+          $ret['asset'] = $asset;
+          $ret['amount'] = $amount;
+          $ret['total'] = $priceToPay;
+          $ret['hash'] = $orderEHASH;
+          $ret['memo'] = btsCreateMemo($orderEHASH);
+          $ret['trx_id'] = $trxId;
+          // payment within 5 units of the price, ie: price = 5 BitUSD, overpayment is when 11 BitUSD is received or more.
+          if($accumulatedAmountPaid > ($priceToPay+5.0))
+          {
+            $ret['status'] = 'overpayment';
+            $ret['amountOverpaid'] = ($accumulatedAmountPaid-$priceToPay);
+          }
+          else if($accumulatedAmountPaid >= ($priceToPay-0.01))
+          {
+            $ret['status'] = 'complete';
+          }
+          else
+          {
+            $ret['status'] = 'processing';
+            $ret['url'] = btsCreatePaymentURL($account,($priceToPay-$amount),$asset,$orderEHASH);
+          }
+        
+          array_push($retArray, $ret);
+       }        
       }  
-      if($accumulatedAmountPaid > 0)
-      {
-	      $ret = array();
-  	
-        $ret['order_id'] = $orderId;
-        $ret['asset'] = $asset;
-        $ret['amountReceived'] = $accumulatedAmountPaid;
-        $ret['total'] = $priceToPay;
-        $ret['orderEHASH'] = $orderEHASH;
-        $ret['trxId'] = $trxId;
-        // payment within 5 units of the price, ie: price = 5 BitUSD, overpayment is when 11 BitUSD is received or more.
-        if($accumulatedAmountPaid > ($priceToPay+5.0))
-        {
-          $ret['status'] = 'overpayment';
-          $ret['amountOverpaid'] = ($accumulatedAmountPaid-$priceToPay);
-        }
-        else if($accumulatedAmountPaid >= ($priceToPay-1.0))
-        {
-          $ret['status'] = 'complete';
-        }
-        else
-        {
-          $ret['status'] = 'processing';
-          $ret['url'] = btsCreatePaymentURL($account,($priceToPay-$accumulatedAmountPaid),$asset,$orderEHASH);
-        }
       
-        array_push($retArray, $ret);
-     }
     }
 
 
