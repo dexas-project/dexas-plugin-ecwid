@@ -8,11 +8,10 @@ require '../../config.php';
 require '../../bts_lib.php';
 require '../../functions.php';
 
-$ecwidAPIUrl = '';
 $openOrderList = getOpenOrders('..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR);
 if(count($openOrderList) <= 0)
 {
-  die;
+  die('done');
 }
 
 $demo = FALSE;
@@ -21,10 +20,9 @@ if($demoMode === "1" || $demoMode === 1 || $demoMode === TRUE || $demoMode === "
 	$demo = TRUE;
 }
 $response   = btsVerifyOpenOrders($openOrderList, $accountName, $rpcUser, $rpcPass, $rpcPort, $hashSalt, $demo);
-echo json_encode($response);
 if(array_key_exists('error', $response))
 {
-	die;
+	die(json_encode($response));
 }
 foreach ($response as $responseOrder) {
    $post = array(
@@ -33,7 +31,7 @@ foreach ($response as $responseOrder) {
         'order_id'     => $responseOrder['order_id'],
         'amount'     => $responseOrder['amount'],
         'total'     => $responseOrder['total'],
-        'trx_id'     => $responseOrder['trx_id'],
+        'trx_id'     => $responseOrder['memo'],
         'url'     => $relayUrl
   );     
 	
@@ -58,6 +56,4 @@ foreach ($response as $responseOrder) {
   
   postToEcwid($post);  
 }
-die;
-
 ?>

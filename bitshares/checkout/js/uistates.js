@@ -10,10 +10,12 @@
 	    $('#paymentProgressOuter').addClass("active");
 	    $('#lookupStatusIcon').removeClass('fa-refresh fa-spin').addClass('fa-search');
 	    $('#scanIcon').removeClass('fa-refresh fa-spin').addClass('fa-qrcode');
-        $("#paymentBalance").text($('#balance').val() + " " + globalAsset);
+        var balance = parseFloat($('#balance').val()).toFixed(2);
+        $("#paymentBalance").text(balance + " " + globalAsset);
 
-        $("#paymentTotalReceived").text(globalAmountReceived+ " "+ globalAsset);
-        $('#pay').html('<i class="fa fa-credit-card"></i>&nbsp;Pay ' + balance + ' ' + globalAsset);
+        var amount = parseFloat(globalAmountReceived).toFixed(2);
+        $("#paymentTotalReceived").text(amount+ " "+ globalAsset);
+        $('#pay').html('<i class="fa fa-credit-card"></i>&nbsp;Pay ' + $('#balance').val() + ' ' + globalAsset);
         $('#scan').html('<i class="fa fa-qrcode"></i>&nbsp;Scan Again');
         $('#pay').removeAttr('disabled');
         $('#scan').removeAttr('disabled');
@@ -50,7 +52,7 @@
         $('#paymentProgress').css('width', "100%");
         $('#paymentProgress').attr('aria-valuenow', 100);
         $('#lookupStatusIcon').removeClass('fa-refresh fa-spin').addClass('fa-search'); 
-        var balance = $("#balance").val();
+        var balance = parseFloat($("#balance").val()).toFixed(2);
         $('#pay').html('<i class="fa fa-credit-card"></i>&nbsp;Pay ' + balance + ' ' + globalAsset);
         $('#scan').html('<i class="fa fa-qrcode"></i>&nbsp;Scan Again');           
         $('#pay').removeAttr('disabled');
@@ -84,12 +86,12 @@
      
     function btsUpdateUIPayment()
     {
-       var amountReceived = globalAmountReceived;
-       var balance = $("#balance").val();
+       var amountReceived = parseFloat(globalAmountReceived).toFixed(2);
+       var balance = parseFloat($("#balance").val()).toFixed(2);
        $("#paymentBalance").text(balance + " " + globalAsset); 
        $("#paymentTotalReceived").text(amountReceived + " " + globalAsset);                         
        $("#payButtonMessage").text("Pay " + balance + " " + globalAsset);
-                    
+       $('#pay').html('<i class="fa fa-credit-card"></i>&nbsp;Pay ' + balance + ' ' + globalAsset);                    
     }
     function btsUpdateUIScanProgress(progress)
     {

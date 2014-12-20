@@ -14,21 +14,17 @@ if(count($orderArray) <= 0)
 {
   $ret = array();
   $ret['error'] = 'Could not find this order in the system, please review the Order ID and Order Hash';
-  echo json_encode($ret);
-  die;
+  die(json_encode($ret));
 }
 $response = btsCreateInvoice($accountName, $orderArray[0]['order_id'], $balance, $orderArray[0]['total'], $orderArray[0]['asset'], $memo);
 if(array_key_exists('error', $response))
 {
     error_log($response['error']);
     $return['error'] = $response['error'];
-    echo json_encode($return);
-    die("Error creating invoice");
+    die(json_encode($return));
 }
 else {	
     $return['url'] = $response['url'];
-    echo json_encode($return);
-    die;
+    die(json_encode($return));
 }
-
 ?>

@@ -56,11 +56,12 @@
         message: $('<div></div>').load('template/paymentstatus.html'),
         autodestroy: false,
         closable: true,
-        closeByBackdrop: false,
+        closeByBackdrop: false,       
         onshown: function(dialogRef){
             if(($("#paymentTotalReceived").text()).length <= 0)
             {
-                $("#paymentTotalReceived").text(globalAmountReceived+ " "+ globalAsset);
+                var amount = parseFloat(globalAmountReceived).toFixed(2);
+                $("#paymentTotalReceived").text(amount+ " "+ globalAsset);
                 $('#pay').click(function() {
                     btsPayClick();
                 }); 
@@ -70,13 +71,14 @@
             }
             if(($("#paymentBalance").text()).length <= 0)
             {
-                $("#paymentBalance").text($('#balance').val() + " " + globalAsset);
+                var total = parseFloat(globalTotal).toFixed(2);
+                $("#paymentBalance").text(total + " " + globalAsset);
             }
             if(globalNeedScan)
             {
        
                 btsStartPaymentTracker($('#btsForm').serialize(), PaymentScanEnum.QUICKSCAN);
-            }                         
+            }                   
         },        
         buttons: [
             {
@@ -84,7 +86,7 @@
             label: 'Export CSV',
             icon: 'fa fa-file-excel-o ',
             action: function(dialogItself){
-                btsExportTableToCSV.apply(this, [$('#paymentStatusTable>table'), 'export.csv']);
+                btsExportPaymentTableToCSV();
             }},
             {         
             label: 'Close',

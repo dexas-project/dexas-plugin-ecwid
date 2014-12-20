@@ -17,8 +17,7 @@ if(count($orderArray) <= 0)
 {
   $ret = array();
   $ret['url'] = $baseURL;
-  echo json_encode($ret);
-  die;
+  die(json_encode($ret));
 }
 $post = array(
     'responseCode'     => '2',
@@ -26,7 +25,7 @@ $post = array(
     'order_id'     => $orderArray[0]['order_id'],
     'amount'     => $orderArray[0]['total'],
     'total'     => $orderArray[0]['total'],
-    'trx_id'     => 1,
+    'trx_id'     => $memo,
     'url'     => $relayUrl
 );
 $linkHTML = postToEcwid($post);
@@ -34,6 +33,5 @@ if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PA
     $all_hrefs = array_unique($links[1]);
 $response['url'] = $all_hrefs[0];
 removeInvFile($order_id .'inv', '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR);
-echo json_encode($response);
-die;
+die(json_encode($response));
 ?>

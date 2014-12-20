@@ -37,8 +37,13 @@
                     }
                     else 
                     {
-                        globalTotal = response.total;
-                        globalAsset = response.asset;
+                        if(globalTotal == 0 && globalAsset === "")
+                        {
+                            $('#balance').val(response.total);
+                            globalTotal = response.total;
+                            globalAsset = response.asset;
+                        }
+
                         btsShowPaymentStatus();                                 
                     }
 			    }
@@ -152,7 +157,7 @@
                                                   
             }
         });     
-    
+    }
     function ajaxSuccess(myurl, serializedData)
     {      
         $.ajax({
@@ -250,8 +255,6 @@
                 else 
                 {
                     btsUpdateUIScanProgress(progressToUpdate);
-                    if(scanMode == PaymentScanEnum.QUICKSCAN)
-                        btsUpdateUIScanComplete(); 
                     if(response.length > 0)
                     {       
                         $("#paymentStatusTable tbody").empty(); 
@@ -296,9 +299,14 @@
                     }
                     if(totalAmountReceived > 0)
                     {
-                        globalAmountReceived = parseFloat(parseFloat(totalAmountReceived).toFixed(2));
-                        $('#balance').val(parseFloat(parseFloat(globalTotal - totalAmountReceived).toFixed(2)));
+                        globalAmountReceived = totalAmountReceived;
+                        var newbalance = globalTotal - totalAmountReceived;
+                        if(newbalance < 0)
+                            newbalance = 0;
+                        $('#balance').val(newbalance);
                     }
+                    if(scanMode == PaymentScanEnum.QUICKSCAN)
+                        btsUpdateUIScanComplete();                     
                     if(complete)
                     {
                         setTimeout(function(){ btsShowPaymentComplete(); }, 5000); 

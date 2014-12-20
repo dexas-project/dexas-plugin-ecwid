@@ -56,11 +56,10 @@ function getOrderFromOpenOrders($memo, $relativeDir)
 }
 function saveToOpenCompleteLog($dataArray, $relativeDir)
 {
-  $data =  date('Y-m-d H:i:s').': '. PHP_EOL;
-  $data .= $dataArray['memo']. PHP_EOL;
+  $data =  date('Y-m-d H:i:s').' '.$dataArray['memo']. PHP_EOL;
 
   // save bitshares invoice data in a file named after the ecwid invoice id
-  file_put_contents($relativeDir.'ordercomplete.inv', $data);
+  file_put_contents($relativeDir.'ordercomplete.inv', $data, FILE_APPEND | LOCK_EX);
 }
 function saveToOpenOrders($dataArray, $relativeDir)
 {
@@ -91,14 +90,13 @@ function isOrderComplete($memoToFind, $relativeDir)
 
   if ($handle = opendir($relativeDir)) {
 	  while (false !== ($file = readdir($handle))) { 
-		  if ($file != 'ordercomplete.inv')
+		  if ($file !== 'ordercomplete.inv')
 			  continue;
       $fileHandle =  fopen($relativeDir.$file, 'r');
       if($fileHandle)
       {
-        
         $valid = FALSE;
-        while (($buffer = fgets($handle)) !== false) {
+        while (($buffer = fgets($fileHandle)) !== false) {
             if (strpos($buffer, $memoToFind) !== false) {
                 $valid = TRUE;
                 break; 
@@ -128,7 +126,6 @@ function doesOrderExist($memoToFind, $relativeDir)
         $order['order_id'] = trim(fgets($fileHandle));
         $order['total'] = trim(fgets($fileHandle));
         $order['asset'] = trim(fgets($fileHandle));
-        $order['url'] = trim(fgets($fileHandle));
         $order['memo'] = trim(fgets($fileHandle));
         fclose($fileHandle);
         if($memoToFind === $order['memo'])
@@ -180,6 +177,5 @@ function postToEcwid($notice)
 			
 	curl_close($ch);
 	return $response;
-
 }
 ?>

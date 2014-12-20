@@ -5,8 +5,7 @@ require 'config.php';
 require 'functions.php';
 if ($_POST['x_login'] != $login) {
 	debuglog('ecwid login does not match that found in config.php');
-	print 'invalid ecwid login';
-	die;
+	die('invalid ecwid login');
 }
 
 
@@ -22,12 +21,11 @@ $openOrder = array(
     'memo'     => $memo,
     'asset'     => $asset
 );
-saveToOpenOrders($openOrder, '.');
+saveToOpenOrders($openOrder, '.'.DIRECTORY_SEPARATOR);
 $post = array(
     'accountName'     => $accountName ,
     'order_id'     => $order_id ,
-    'total'     => $total
-    
+    'memo'     => $memo
 );
 
 $rbimg = 'checkout/img/robohash.png';
@@ -37,25 +35,25 @@ if(!file_exists($img))
   file_put_contents($rbimg, file_get_contents($rbUrl));
 }    
 
-$form = '<form name="bitsharesredirect" id="bitsharesredirect" action="checkout/index.php" method="POST">';
+$form = '<!DOCTYPE html><html><head><title>Redirecting to Bitshares checkout...</title></head><body><form name="bitsharesredirect" id="bitsharesredirect" action="checkout/index.php" method="POST">';
 
 foreach ($post as $key => $value) {
-    $form.= '<input type="hidden" name="'.$key.'" value = "'.$value.'" />';
+    $form.= '<input type="hidden" name="'.$key.'" value = "'.$value.'">';
 }
 $form.='</form>';
 $form.='<script type="text/javascript">setTimeout(function(){ document.getElementById("bitsharesredirect").submit(); }, 3000);</script>';
 
 echo $form;
 echo 'Redirecting to Bitshares payment gateway...';
+echo '</body></html>';
 $post = array(
     'responseCode'     => '1',
     'reasonCode'     => '1',
     'order_id'     => $order_id,
     'amount'     => 0,
     'total'     => $total,
-    'trx_id'     => 0,
+    'trx_id'     => $memo,
     'url'     => $relayUrl
 );
 postToEcwid($post);
-die;
 ?>

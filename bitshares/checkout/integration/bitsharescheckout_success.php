@@ -1,34 +1,25 @@
 <?php
-// This is a redirect page, expect the caller to redirec to URL passed back.
-
-//1) Verify order exists in open order list based on memo or order_id, if not send error message
-//2) Recreate hash from post data to ensure it matches with hash passed in, if not send error message
-//3) Verify order exists on blockchain and is fully paid, if not send error message
-//4) Send success notification to ECWID checkout
-
 require '../../config.php';
 require '../../bts_lib.php';
 require '../../functions.php';
 
 
-
+$order_id = $_POST['order_id'];
 $memo = $_POST['memo'];
 $orderArray = getOrderFromOpenOrders($memo,'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR);
 if(count($orderArray) <= 0)
 {
   $ret = array();
-  $ret['error'] = 'Could not find this order in the system, please review the Order ID and Order Hash';';
-  echo json_encode($ret);
-  die;
+  $ret['error'] = 'Could not find this order in the system, please review the Order ID and Order Hash';
+  die(json_encode($ret));
 }
-$memoHashSanity = btsCreateEHASH($accountName,$orderArray[0]['order_id'], $orderArray[0]['total'], $orderArray[0]['asset'], $hashSalt);
-$memoSanity = btsCreateMemo($memoHashSanity);
-if ($memoSanity !== $memo) {
+
+if ($orderArray[0]['order_id'] !== $order_id) {
 	$ret = array();
-	$ret['error'] = 'Invalid memo. Could not complete your order';
-  echo json_encode($ret);
-	die;
+	$ret['error'] = 'Invalid Order ID. Could not complete your order';
+	die(json_encode($ret));
 }
+
 $demo = FALSE;
 if($demoMode === "1" || $demoMode === 1 || $demoMode === TRUE || $demoMode === "true")
 {
@@ -40,31 +31,32 @@ if(array_key_exists('error', $response))
 {
   $ret = array();
   $ret['error'] = 'Could not verify order. Please try again';
-  echo json_encode($ret);
-	die;
+	die(json_encode($ret));
 }
-
-$orderpaid = false;
-$trxid = null;
+$orderpaid = FALSE;
 $amount = 0;
 foreach ($response as $responseOrder) {
 	// remove open order if its paid
 	switch($responseOrder['status'])
 	{
 		case 'complete':    
-      $orderpaid = true;
-      $trxid  = $responseOrder['trx_id'];
+      $orderpaid = TRUE;
       $amount += $responseOrder['amount'];
       break;		
 		case 'overpayment':
-      $orderpaid = true;
-      $trxid  = $responseOrder['trx_id'];
+      $orderpaid = TRUE;
       $amount += $responseOrder['amount'];
 			break; 
-    
+ 	  case 'processing':
+      $amount += $responseOrder['amount'];
+			break;    
 	} 
 }
-if($orderpaid == true)
+if($amount < ($orderArray[0]['total'] - 1))
+  $amount = $orderArray[0]['total'];
+else if($amount > ($orderArray[0]['total'] + 1))
+  $amount = $orderArray[0]['total'];
+if($orderpaid)
 {
   $post = array(
       'responseCode'     => '1',
@@ -72,7 +64,7 @@ if($orderpaid == true)
       'order_id'     => $orderArray[0]['order_id'],
       'amount'     => $amount,
       'total'     => $orderArray[0]['total'],
-      'trx_id'     => $trxid,
+      'trx_id'     => $memo,
       'url'     => $relayUrl
   );
 
@@ -85,17 +77,12 @@ if($orderpaid == true)
       'memo'     => $memo
   );
   saveToOpenCompleteLog($completeOrder, '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR);
-  echo json_encode($response);
+  die(json_encode($response));
 }
 else
 {
   $ret = array();
   $ret['error'] = 'Order was not paid fully. Please try again';
-  echo json_encode($ret);
+  die(json_encode($ret));
 }
-die;
-
-	
-
-
 ?>

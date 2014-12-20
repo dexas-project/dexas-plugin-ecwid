@@ -55,11 +55,11 @@
 							  	<div class="row">
 									<div class="col-xs-12">
 										<h5>Order Hash</h5>
-	                                    <input name="memo" id="memo" type="text" title="The transaction memo to distinguish payment for this order" class="form-control" required value="<?php echo $_REQUEST['memo']; ?>"></input>
+	                                    <input name="memo" id="memo" type="text" title="The transaction memo to distinguish payment for this order" class="form-control" required value="<?php echo $_REQUEST['memo']; ?>">
 									</div>
 								</div>	  			
 							  </div>
-						    <button id="payStatus" type="submit" class="btn btn-block signin"><i id="payStatusIcon" class="fa fa-search"></i>&nbsp;Lookup</button>
+						    <button id="lookupStatus" type="submit" class="btn btn-block signin"><i id="lookupStatusIcon" class="fa fa-search"></i>&nbsp;Lookup</button>
 						    </div>
 						    </form>
 							<div class="form-footer">
@@ -79,6 +79,11 @@
 	  </div>
 	</div>
 </section>
+<footer class="footer">
+  <div class="container">
+    <p class="text-muted pull-right">Brought to you by delegate: <a href="bts:dev.sidhujag/approve">dev.sidhujag</a></p>
+  </div>
+</footer>
 	  
     <!-- js library -->
 		<script type="text/javascript" src="js/vendor/jquery.min.js"></script>
@@ -87,10 +92,11 @@
         <script type="text/javascript" src="js/vendor/bootstrap.min.js"></script>
         <script type="text/javascript" src="js/vendor/bootstrap-dialog.min.js"></script>
 		<script type="text/javascript" src="js/vendor/waypoints.min.js"></script>
-		<script type="text/javascript" src="js/md5.js"></script>
+		
 		<script type="text/javascript" src="js/globals.js"></script>
 		<script type="text/javascript" src="js/uistates.js"></script>
 		<script type="text/javascript" src="js/ajax.js"></script>
+		
 		<script type="text/javascript" src="js/bitsharescheckout.js"></script>
 		<script type="text/javascript">
 			(function($) {

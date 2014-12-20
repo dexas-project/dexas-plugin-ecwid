@@ -20,9 +20,7 @@ $response   = btsVerifyOpenOrders($orderArray, $accountName, $rpcUser, $rpcPass,
 
 if(array_key_exists('error', $response))
 {
-	die;
+	die(json_encode($response));
 }
-echo json_encode($response);
-die;
-
+die(json_encode($response));
 ?>

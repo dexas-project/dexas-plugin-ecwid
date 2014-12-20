@@ -139,7 +139,7 @@ function btsGetAssetNameById($assetId, $rpcUser, $rpcPass, $rpcPort)
 }
 function btsCreateMemo($hash)
 {
-  return 'E-HASH:'.$hash;
+  return 'EHASH:'.$hash;
 }
 function btsCreatePaymentURL($account, $amount, $asset, $memo)
 {

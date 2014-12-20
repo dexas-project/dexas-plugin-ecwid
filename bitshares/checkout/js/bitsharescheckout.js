@@ -1,17 +1,4 @@
-
-    function btsSaveAs(uri, filename) {
-        var link = document.createElement('a');
-        if (typeof link.download === 'string') {
-            document.body.appendChild(link); // Firefox requires the link to be in the body
-            link.download = filename;
-            link.href = uri;
-            link.click();
-            document.body.removeChild(link); // remove the link when done
-        } else {
-            location.replace(uri);
-        }
-    }
-                
+     
     function btsShowSuccess()
     {
         globalRedirectDialog.open();  
@@ -35,47 +22,13 @@
         btsShowSuccess();
     }
    
-    function btsExportTableToCSV($table, filename) {
-
-        var $rows = $table.find('tr:has(td)'),
-
-            // Temporary delimiter characters unlikely to be typed by keyboard
-            // This is to avoid accidentally splitting the actual contents
-            tmpColDelim = String.fromCharCode(11), // vertical tab character
-            tmpRowDelim = String.fromCharCode(0), // null character
-
-            // actual delimiter characters for CSV format
-            colDelim = '","',
-            rowDelim = '"\r\n"',
-
-            // Grab text from table into CSV formatted string
-            csv = '"' + $rows.map(function (i, row) {
-                var $row = $(row),
-                    $cols = $row.find('td');
-
-                return $cols.map(function (j, col) {
-                    var $col = $(col),
-                        text = $col.text();
-
-                    return text.replace('"', '""'); // escape double quotes
-
-                }).get().join(tmpColDelim);
-
-            }).get().join(tmpRowDelim)
-                .split(tmpRowDelim).join(rowDelim)
-                .split(tmpColDelim).join(colDelim) + '"',
-
-            // Data URI
-            csvData = 'data:application/csv;charset=utf-8,' + encodeURIComponent(csv);
-            btsSaveAs(csvData, filename);
-            
-        
+    function btsExportPaymentTableToCSV() {
+        window.location.href = '../exportToCSV.php?memo='+$('#memo').val();
     }    
     var btsShowPaymentStatus = function()
     {
-     
+        globalPaymentDialog.options.title = 'Payment Status - ' + $("#memo").val();
         globalPaymentDialog.open();
-        
         
     }
     
@@ -164,7 +117,7 @@
                 clearInterval(globalPaymentTimer);
             globalPaymentTimer = setInterval(function() {
                 count++;
-                var progressToUpdate = 20+parseInt(80 * parseFloat(count / 12));
+                var progressToUpdate = 20+parseInt(80 * parseFloat(count / 18));
                 ajaxScanChain(serializedData, progressToUpdate);
                 // run for about 3 minutes
                 if(count >= 18)
