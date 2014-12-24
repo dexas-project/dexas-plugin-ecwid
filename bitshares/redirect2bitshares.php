@@ -24,7 +24,7 @@ $openOrder = array(
 saveToOpenOrders($openOrder, '.'.DIRECTORY_SEPARATOR);
 $post = array(
     'accountName'     => $accountName ,
-    'order_id'     => $order_id ,
+    'orderId'     => $order_id ,
     'memo'     => $memo
 );
 
@@ -35,17 +35,19 @@ if(!file_exists($img))
   file_put_contents($rbimg, file_get_contents($rbUrl));
 }    
 
-$form = '<!DOCTYPE html><html><head><title>Redirecting to Bitshares checkout...</title></head><body><form name="bitsharesredirect" id="bitsharesredirect" action="checkout/index.php" method="POST">';
 
+$urlParams = '?';
+$index = 0;
 foreach ($post as $key => $value) {
-    $form.= '<input type="hidden" name="'.$key.'" value = "'.$value.'">';
+	$index++;
+	if($index > 1)
+	{
+		$urlParams .= '&';
+	}
+	$urlParams .= $key.'='.$value;
 }
-$form.='</form>';
-$form.='<script type="text/javascript">setTimeout(function(){ document.getElementById("bitsharesredirect").submit(); }, 3000);</script>';
-
-echo $form;
+header('refresh:3;url=checkout/index.html'.$urlParams );
 echo 'Redirecting to Bitshares payment gateway...';
-echo '</body></html>';
 $post = array(
     'responseCode'     => '1',
     'reasonCode'     => '1',
