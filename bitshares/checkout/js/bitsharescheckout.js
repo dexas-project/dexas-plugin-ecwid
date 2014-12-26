@@ -1,34 +1,31 @@
-function GetURLParameter(sParam)
-{
-    var sPageURL = window.location.search.substring(1);
-    var sURLVariables = sPageURL.split('&');
-    for (var i = 0; i < sURLVariables.length; i++) 
+    function GetURLParameter(sParam)
     {
-        var sParameterName = sURLVariables[i].split('=');
-        if (sParameterName[0] == sParam) 
+        var sPageURL = window.location.search.substring(1);
+        var sURLVariables = sPageURL.split('&');
+        for (var i = 0; i < sURLVariables.length; i++) 
         {
-            return sParameterName[1];
+            var sParameterName = sURLVariables[i].split('=');
+            if (sParameterName[0] == sParam) 
+            {
+                return sParameterName[1];
+            }
         }
     }
-}
-$( document ).ready(function() {
-    var accountName = GetURLParameter('accountName');
-    var orderid = GetURLParameter('orderId');
-    var memo= GetURLParameter('memo');
-    $('#accountName').val(accountName);
-    $('#accountNameDisplay').text(accountName);
-    $('#order_id').val(orderid);
-    $('#memo').val(memo);
-    var subject = "Bitshares payment URL for order "+memo;
-    var url = encodeURIComponent(window.location.href);
-    $('#socialMail').attr('href', "mailto:?subject="+subject+"&body="+url);
-    $('#socialGoogle').attr('href', "https://plus.google.com/share?url="+url );
-    $('#socialFacebook').attr('href', "http://www.facebook.com/sharer.php?m2w&s=100&p[url]="+url+"&p[images][0]=http://bitshares.org/wp-content/uploads/2014/11/bts-logo-white.png&p[title]=Bitshares payment gateway&p[summary]="+subject);
-    $('#socialTwitter').attr('href', "http://twitter.com/intent/tweet?source=sharethiscom&text="+subject+"&url="+url );
-
-		
-	
-}); 
+    $( document ).ready(function() {
+        var accountName = GetURLParameter('accountName');
+        var orderid = GetURLParameter('orderId');
+        var memo= GetURLParameter('memo');
+        $('#accountName').val(accountName);
+        $('#accountNameDisplay').text(accountName);
+        $('#order_id').val(orderid);
+        $('#memo').val(memo);
+        var subject = "Bitshares payment URL for order "+memo;
+        var url = encodeURIComponent(window.location.href);
+        $('#socialMail').attr('href', "mailto:?subject="+subject+"&body="+url);
+        $('#socialGoogle').attr('href', "https://plus.google.com/share?url="+url );
+        $('#socialFacebook').attr('href', "http://www.facebook.com/sharer.php?m2w&s=100&p[url]="+url+"&p[images][0]=http://bitshares.org/wp-content/uploads/2014/11/bts-logo-white.png&p[title]=Bitshares payment gateway&p[summary]="+subject);
+        $('#socialTwitter').attr('href', "http://twitter.com/intent/tweet?source=sharethiscom&text="+subject+"&url="+url );
+    }); 
     function btsShowSuccess()
     {
         globalRedirectDialog.open();  
@@ -41,8 +38,7 @@ $( document ).ready(function() {
             if(countdown <= 0)
             { 
                 clearInterval(globalRedirectCountdownTimer);       
-                ajaxSuccess("integration/bitsharescheckout_success.php", 
-$('#btsForm').serialize());
+                ajaxSuccess("callbacks/callback_success.php", $('#btsForm').serialize());
             }
             
         }, 1000); 
@@ -54,7 +50,7 @@ $('#btsForm').serialize());
     }
    
     function btsExportPaymentTableToCSV() {
-        window.location.href = '../exportToCSV.php?memo='+$('#memo').val();
+            window.location.href = '../exportCSV.php?memo='+$('#memo').val();
     }    
     var btsShowPaymentStatus = function()
     {
@@ -115,16 +111,13 @@ $('#btsForm').serialize());
       
         if(globalPaid)
         {
-            ajaxSuccess("integration/bitsharescheckout_success.php", 
-$('#btsForm').serialize());
+            ajaxSuccess("callbacks/callback_success.php", $('#btsForm').serialize());
         }
         else
         {
-            BootstrapDialog.confirm('This will cancel your order. Are you sure?', function
-(result){
+            BootstrapDialog.confirm('This will cancel your order. Are you sure?', function(result){
                 if(result) {
-                    ajaxCancel("integration/bitsharescheckout_cancel.php", 
-$('#btsForm').serialize());
+                    ajaxCancel("callbacks/callback_cancel.php", $('#btsForm').serialize());
                 }else {
                     
                 }

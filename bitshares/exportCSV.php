@@ -1,19 +1,9 @@
 <?php
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename=exportTransactions.csv');
-require 'config.php';
-require 'bts_lib.php';
-require 'functions.php';
+require 'systemfunctions.php';
 $memo = $_REQUEST['memo'];
-$orderArray = getOrderFromOpenOrders($memo,'..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR);
-
-$demo = FALSE;
-if($demoMode === "1" || $demoMode === 1 || $demoMode === TRUE || $demoMode === "true")
-{
-	$demo = TRUE;
-}
-$response   = btsVerifyOpenOrders($orderArray, $accountName, $rpcUser, $rpcPass, $rpcPort, $hashSalt, $demo);
-
+$response = verifyOpenOrder($memo);
 // create a file pointer connected to the output stream
 $output = fopen('php://output', 'w');
 

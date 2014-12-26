@@ -2,7 +2,7 @@
     {
         
         $.ajax({
-            url: "integration/bitsharescheckout_lookup.php",
+            url: "callbacks/callback_lookup.php",
             type: 'post',
             dataType: 'json',
             data: serializedData,
@@ -59,7 +59,7 @@
     {
         
         $.ajax({
-            url: "integration/bitsharescheckout_pay.php",
+            url: "callbacks/callback_pay.php",
             type: 'post',
             dataType: 'json',
             data: serializedData,
@@ -216,7 +216,7 @@
         if(progressToUpdate > 100)
             progressToUpdate = 100;    
         $.ajax({
-            url: "integration/bitsharescheckout_verifysingleorder.php",
+            url: "callbacks/callback_verifysingleorder.php",
             type: 'post',
             dataType: 'json',
             data: serializedData,
