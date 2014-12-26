@@ -1,48 +1,45 @@
 <?php
 function fileSaveToOpenOrdersHelper($dataArray)
 {
-  $relativeDir = '.'.DIRECTORY_SEPARATOR;
+
   $data =  $dataArray['order_id']. PHP_EOL;
   $data .= $dataArray['total']. PHP_EOL;
   $data .= $dataArray['asset']. PHP_EOL;
   $data .= $dataArray['memo']. PHP_EOL;
 
   // save bitshares invoice data in a file named after the ecwid invoice id
-  file_put_contents($relativeDir.$dataArray['order_id'].'.inv', $data);
+  file_put_contents(ROOT.$dataArray['order_id'].'.inv', $data);
 }
 function fileSaveToOpenCompleteHelper($dataArray)
 {
-  $relativeDir = '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR;
   $data =  date('Y-m-d H:i:s').' '.$dataArray['memo']. PHP_EOL;
 
   // save bitshares invoice data in a file named after the ecwid invoice id
-  file_put_contents($relativeDir.'ordercomplete.inv', $data, FILE_APPEND | LOCK_EX);
+  file_put_contents(ROOT.'ordercomplete.inv', $data, FILE_APPEND | LOCK_EX);
 }
 function fileRemoveHelper($invFileName)
 {
-  $relativeDir = '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR;
-  if ($handle = opendir($relativeDir)) {
+  if ($handle = opendir(ROOT)) {
 	  while (false !== ($file = readdir($handle))) { 
 		  $ext = substr($file, -3);
 		  if ($ext != 'inv')
 			  continue;
 		  if($file != $invFileName)
 			continue;
-		  unlink($relativeDir.$file);  
+		  unlink(ROOT.$file);  
 	  }
 	  closedir($handle); 
   }      
 }
 function getOpenOrders()
 {
- $relativeDir = '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR;
   $openOrderList = array();
-  if ($handle = opendir($relativeDir)) {
+  if ($handle = opendir(ROOT)) {
 	  while (false !== ($file = readdir($handle))) { 
 		  $ext = substr($file, -3);
 		  if ($ext != 'inv')
 			  continue;
-		  $fileHandle =  fopen($relativeDir.$file, "r");
+		  $fileHandle =  fopen(ROOT.$file, "r");
 		  if($fileHandle)
 		  {
 			$newOrder = array();
@@ -88,12 +85,11 @@ function getOrder($memo)
 
 function isOrderComplete($memoToFind)
 {
-  $relativeDir = '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR;
-  if ($handle = opendir($relativeDir)) {
+  if ($handle = opendir(ROOT)) {
 	  while (false !== ($file = readdir($handle))) { 
 		  if ($file !== 'ordercomplete.inv')
 			  continue;
-      $fileHandle =  fopen($relativeDir.$file, 'r');
+      $fileHandle =  fopen(ROOT.$file, 'r');
       if($fileHandle)
       {
         $valid = FALSE;
@@ -114,13 +110,13 @@ function isOrderComplete($memoToFind)
 }
 function doesOrderExist($memoToFind)
 {
-  $relativeDir = '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR;
-  if ($handle = opendir($relativeDir)) {
+
+  if ($handle = opendir(ROOT)) {
 	  while (false !== ($file = readdir($handle))) { 
 		  $ext = substr($file, -3);
 		  if ($ext != 'inv')
 			  continue;
-      $fileHandle =  fopen($relativeDir.$file, 'r');
+      $fileHandle =  fopen(ROOT.$file, 'r');
       if($fileHandle)
       {
         $order = array();
@@ -142,17 +138,25 @@ function doesOrderExist($memoToFind)
 }
 function completeOrderUser($response)
 {
+	global $relayUrl;
 	$orderpaid = FALSE;
+	$order_id = 0;
 	$amount = 0;
 	foreach ($response as $responseOrder) {
 		switch($responseOrder['status'])
 		{
 			case 'complete':    
 				$orderpaid = TRUE;
+				$order_id = $responseOrder['order_id'];
+				$total = $responseOrder['total'];
+				$memo = $responseOrder['memo'];
 				$amount += $responseOrder['amount'];
 				break;		
 			case 'overpayment':
 				$orderpaid = TRUE;
+				$order_id = $responseOrder['order_id'];
+				$total = $responseOrder['total'];
+				$memo = $responseOrder['memo'];				
 				$amount += $responseOrder['amount'];
 				break; 
  			case 'processing':
@@ -165,10 +169,10 @@ function completeOrderUser($response)
 	  $post = array(
 		  'responseCode'     => '1',
 		  'reasonCode'     => '1',
-		  'order_id'     => $orderArray[0]['order_id'],
+		  'order_id'     => $order_id,
 		  'amount'     => $amount,
-		  'total'     => $orderArray[0]['total'],
-		  'trx_id'     => $orderArray[0]['memo'],
+		  'total'     => $total,
+		  'trx_id'     => $memo,
 		  'url'     => $relayUrl
 	  );
 
@@ -201,7 +205,7 @@ function cancelOrderUser($order)
 	if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
 		$all_hrefs = array_unique($links[1]);
 	$response['url'] = $all_hrefs[0];
-	fileRemoveHelper($order_id .'.inv');
+	fileRemoveHelper($order['order_id'] .'.inv');
 	return $response;
 }
 function createOrderUser()
