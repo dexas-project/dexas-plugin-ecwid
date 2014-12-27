@@ -1,7 +1,7 @@
 <?php
 define('ROOT', __DIR__ .DIRECTORY_SEPARATOR);
 $relayUrl = 'http://app.ecwid.com/authorizenet/6223086';
-$baseURL = 'http://bitshares.ecwid.com';
+$baseURL = 'http://bitshares.ecwid.com/';
 $accountName = 'opencartdemo';
 $rpcUser = 'user';
 $rpcPass = 'pass';

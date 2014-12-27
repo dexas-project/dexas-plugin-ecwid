@@ -285,7 +285,7 @@ function createOrderUser()
 	);
 	sendToCart($post);
 	$ret = array(
-		'account'     => $accountName,
+		'accountName'     => $accountName,
 		'order_id'     => $order_id,
 		'memo'     => $memo
 	);
@@ -338,7 +338,7 @@ function sendToCart($notice)
 	curl_setopt($ch, CURLOPT_POST, 1);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $datatopost);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-  
+	curl_setopt($ch, CURLOPT_TIMEOUT, '15');
 	
 	
 	$response = curl_exec($ch);
