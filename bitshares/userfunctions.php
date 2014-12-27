@@ -31,7 +31,7 @@ function fileRemoveHelper($invFileName)
 	  closedir($handle); 
   }      
 }
-function getOpenOrders()
+function getOpenOrdersHelper()
 {
   $openOrderList = array();
   if ($handle = opendir(ROOT)) {
@@ -61,29 +61,7 @@ function getOpenOrders()
   return $openOrderList;
 }
 
-function getOrderComplete($memo)
-{	
-  $orders = array();
-  $myorder = isOrderComplete($memo);
-  if($myorder !== FALSE)
-  {
-    array_push($orders, $myorder);
-  }
-  return $orders;
-}
-
-function getOrder($memo)
-{
-  $orders = array();
-  $myorder = doesOrderExist($memo);
-  if($myorder !== FALSE)
-  {
-    array_push($orders, $myorder);
-  }
-  return $orders;
-}
-
-function isOrderComplete($memoToFind)
+function isOrderCompleteHelper($memoToFind)
 {
   if ($handle = opendir(ROOT)) {
 	  while (false !== ($file = readdir($handle))) { 
@@ -108,7 +86,7 @@ function isOrderComplete($memoToFind)
   }      
   return FALSE;
 }
-function doesOrderExist($memoToFind)
+function doesOrderExistHelper($memoToFind)
 {
 
   if ($handle = opendir(ROOT)) {
@@ -136,9 +114,65 @@ function doesOrderExist($memoToFind)
   }      
   return FALSE;
 }
-function completeOrderUser($response)
+function getOrderComplete($memo, $order_id)
+{	
+  $orders = array();
+  $myorder = isOrderCompleteHelper($memo);
+  if($myorder !== FALSE)
+  {
+    array_push($orders, $myorder);
+  }
+  return $orders;
+}
+
+function getOrder($memo, $order_id)
+{
+  $orders = array();
+  $myorder = doesOrderExistHelper($memo);
+  if($myorder !== FALSE)
+  {
+    array_push($orders, $myorder);
+  }
+  return $orders;
+}
+
+function completeOrderUser($memo, $order_id)
 {
 	global $relayUrl;
+	global $baseURL;
+	global $relayUrl;
+	global $accountName;
+	global $rpcUser;
+	global $rpcPass;
+	global $rpcPort;
+	global $demoMode;
+	global $hashSalt;
+	$orderArray = getOrder($memo, $order_id);
+	if(count($orderArray) <= 0)
+	{
+	  $ret = array();
+	  $ret['error'] = 'Could not find this order in the system, please review the Order ID and Order Hash';
+	  return $ret;
+	}
+
+	if ($orderArray[0]['order_id'] !== $order_id) {
+		$ret = array();
+		$ret['error'] = 'Invalid Order ID';
+		return $ret;
+	}
+	$demo = FALSE;
+	if($demoMode === "1" || $demoMode === 1 || $demoMode === TRUE || $demoMode === "true")
+	{
+		$demo = TRUE;
+	}
+	$response = btsVerifyOpenOrders($orderArray, $accountName, $rpcUser, $rpcPass, $rpcPort, $hashSalt, $demo);
+
+	if(array_key_exists('error', $response))
+	{
+	  $ret = array();
+	  $ret['error'] = 'Could not verify order. Please try again';
+	  return $ret;
+	}	
 	$orderpaid = FALSE;
 	$order_id = 0;
 	$amount = 0;
@@ -188,9 +222,18 @@ function completeOrderUser($response)
 	}
 	return $response;	  
 }
-function cancelOrderUser($order)
+function cancelOrderUser($memo, $order_id)
 {
 	global $relayUrl;
+	global $baseURL;
+	$orderArray = getOrder($memo, $order_id);
+	if(count($orderArray) <= 0)
+	{
+	  $ret = array();
+	  $ret['url'] = $baseURL;
+	  return $ret;
+	}
+	$order = $orderArray[0];
 	$response = array();
 	$post = array(
 		'responseCode'     => '2',
@@ -248,7 +291,27 @@ function createOrderUser()
 	);
 	return $ret;	
 }
+function cronJobUser()
+{
 
+	$openOrderList = getOpenOrdersHelper();
+	if(count($openOrderList) <= 0)
+	{
+	  return 'No open orders found!';
+	}
+
+	$demo = FALSE;
+	if($demoMode === "1" || $demoMode === 1 || $demoMode === TRUE || $demoMode === "true")
+	{
+		$demo = TRUE;
+	}
+	$response   = btsVerifyOpenOrders($openOrderList, $accountName, $rpcUser, $rpcPass, $rpcPort, $hashSalt, $demo);
+	if(array_key_exists('error', $response))
+	{
+		return $response;
+	}
+	return completeOrderUser($response);
+}
 function sendToCart($notice)
 {
 	global $login;
