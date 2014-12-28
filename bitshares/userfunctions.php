@@ -1,4 +1,42 @@
 <?php
+function sendToCartHelper($notice)
+{
+	global $login;
+	global $hashSalt;
+	$x_response_code = $notice['responseCode']; // 1=approved, 2=declined
+	$x_response_reason_code = $notice['reasonCode']; // 1=approved, 2= declined
+	$x_trans_id = $notice['trx_id'];
+	$x_invoice_num = $notice['order_id']; 
+	$x_amount = $notice['amount'];
+	$x_url = $notice['url'];
+	$x_total = $notice['total'];
+	$string = $hashSalt.$login.$x_trans_id.$x_total;
+  
+	$x_MD5_Hash = md5($string);
+	$datatopost = array (
+		"x_response_code" => $x_response_code,
+		"x_response_reason_code" => $x_response_reason_code,
+		"x_trans_id" => $x_trans_id,
+		"x_invoice_num" => $x_invoice_num,
+		"x_amount" => $x_amount,
+		"x_MD5_Hash" => $x_MD5_Hash
+		);
+	$ch = curl_init($x_url);
+	curl_setopt($ch, CURLOPT_POST, 1);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, $datatopost);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_TIMEOUT, '15');
+	
+	
+	$response = curl_exec($ch);
+	if ($response === false){
+		debuglog('request to opencart failed');
+		debuglog(curl_error($ch));
+	}
+			
+	curl_close($ch);
+	return $response;
+}
 function fileSaveToOpenOrdersHelper($dataArray)
 {
 
@@ -61,7 +99,7 @@ function getOpenOrdersHelper()
   return $openOrderList;
 }
 
-function isOrderCompleteHelper($memoToFind)
+function isOrderComplete($memoToFind, $order_id)
 {
   if ($handle = opendir(ROOT)) {
 	  while (false !== ($file = readdir($handle))) { 
@@ -86,7 +124,7 @@ function isOrderCompleteHelper($memoToFind)
   }      
   return FALSE;
 }
-function doesOrderExistHelper($memoToFind)
+function doesOrderExist($memoToFind, $order_id)
 {
 
   if ($handle = opendir(ROOT)) {
@@ -113,27 +151,6 @@ function doesOrderExistHelper($memoToFind)
 	closedir($handle); 
   }      
   return FALSE;
-}
-function getOrderComplete($memo, $order_id)
-{	
-  $orders = array();
-  $myorder = isOrderCompleteHelper($memo);
-  if($myorder !== FALSE)
-  {
-    array_push($orders, $myorder);
-  }
-  return $orders;
-}
-
-function getOrder($memo, $order_id)
-{
-  $orders = array();
-  $myorder = doesOrderExistHelper($memo);
-  if($myorder !== FALSE)
-  {
-    array_push($orders, $myorder);
-  }
-  return $orders;
 }
 
 function completeOrderUser($memo, $order_id)
@@ -173,53 +190,36 @@ function completeOrderUser($memo, $order_id)
 	  $ret['error'] = 'Could not verify order. Please try again';
 	  return $ret;
 	}	
-	$orderpaid = FALSE;
-	$order_id = 0;
-	$amount = 0;
 	foreach ($response as $responseOrder) {
 		switch($responseOrder['status'])
-		{
-			case 'complete':    
-				$orderpaid = TRUE;
-				$order_id = $responseOrder['order_id'];
-				$total = $responseOrder['total'];
-				$memo = $responseOrder['memo'];
-				$amount += $responseOrder['amount'];
-				break;		
+		{	
 			case 'overpayment':
-				$orderpaid = TRUE;
-				$order_id = $responseOrder['order_id'];
-				$total = $responseOrder['total'];
-				$memo = $responseOrder['memo'];				
-				$amount += $responseOrder['amount'];
-				break; 
- 			case 'processing':
-				$amount += $responseOrder['amount'];
-				break;    
+			case 'complete':
+				$post = array(
+					  'responseCode'     => '1',
+					  'reasonCode'     => '1',
+					  'order_id'     => $responseOrder['order_id'],
+					  'amount'     => $responseOrder['amount'],
+					  'total'     => $responseOrder['total'],
+					  'trx_id'     => $responseOrder['memo'],
+					  'url'     => $relayUrl
+				  );
+
+				  $linkHTML = sendToCartHelper($post);
+				  if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
+					  $all_hrefs = array_unique($links[1]);
+				  $response['url'] = $all_hrefs[0];
+				  fileRemoveHelper($order_id .'.inv');
+				  $completeOrder = array(
+					  'memo'     => $memo
+				  );
+				  fileSaveToOpenCompleteHelper($completeOrder);
+				  break; 
+			default:
+				break;
 		} 
 	}
-	if($orderpaid)
-	{
-	  $post = array(
-		  'responseCode'     => '1',
-		  'reasonCode'     => '1',
-		  'order_id'     => $order_id,
-		  'amount'     => $amount,
-		  'total'     => $total,
-		  'trx_id'     => $memo,
-		  'url'     => $relayUrl
-	  );
 
-	  $linkHTML = sendToCart($post);
-	  if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
-		  $all_hrefs = array_unique($links[1]);
-	  $response['url'] = $all_hrefs[0];
-	  fileRemoveHelper($order_id .'.inv');
-	  $completeOrder = array(
-		  'memo'     => $memo
-	  );
-	  fileSaveToOpenCompleteHelper($completeOrder);
-	}
 	return $response;	  
 }
 function cancelOrderUser($memo, $order_id)
@@ -233,6 +233,13 @@ function cancelOrderUser($memo, $order_id)
 	  $ret['url'] = $baseURL;
 	  return $ret;
 	}
+
+	if ($orderArray[0]['order_id'] !== $order_id) {
+	  $ret = array();
+	  $ret['url'] = $baseURL;
+	  return $ret;
+	}	
+
 	$order = $orderArray[0];
 	$response = array();
 	$post = array(
@@ -244,7 +251,7 @@ function cancelOrderUser($memo, $order_id)
 		'trx_id'     => $order['memo'],
 		'url'     => $relayUrl
 	);
-	$linkHTML = sendToCart($post);
+	$linkHTML = sendToCartHelper($post);
 	if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
 		$all_hrefs = array_unique($links[1]);
 	$response['url'] = $all_hrefs[0];
@@ -283,7 +290,7 @@ function createOrderUser()
 		'trx_id'     => $memo,
 		'url'     => $relayUrl
 	);
-	sendToCart($post);
+	sendToCartHelper($post);
 	$ret = array(
 		'accountName'     => $accountName,
 		'order_id'     => $order_id,
@@ -310,44 +317,36 @@ function cronJobUser()
 	{
 		return $response;
 	}
-	return completeOrderUser($response);
-}
-function sendToCart($notice)
-{
-	global $login;
-	global $hashSalt;
-	$x_response_code = $notice['responseCode']; // 1=approved, 2=declined
-	$x_response_reason_code = $notice['reasonCode']; // 1=approved, 2= declined
-	$x_trans_id = $notice['trx_id'];
-	$x_invoice_num = $notice['order_id']; 
-	$x_amount = $notice['amount'];
-	$x_url = $notice['url'];
-	$x_total = $notice['total'];
-	$string = $hashSalt.$login.$x_trans_id.$x_total;
-  
-	$x_MD5_Hash = md5($string);
-	$datatopost = array (
-		"x_response_code" => $x_response_code,
-		"x_response_reason_code" => $x_response_reason_code,
-		"x_trans_id" => $x_trans_id,
-		"x_invoice_num" => $x_invoice_num,
-		"x_amount" => $x_amount,
-		"x_MD5_Hash" => $x_MD5_Hash
-		);
-	$ch = curl_init($x_url);
-	curl_setopt($ch, CURLOPT_POST, 1);
-	curl_setopt($ch, CURLOPT_POSTFIELDS, $datatopost);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	curl_setopt($ch, CURLOPT_TIMEOUT, '15');
-	
-	
-	$response = curl_exec($ch);
-	if ($response === false){
-		debuglog('request to opencart failed');
-		debuglog(curl_error($ch));
+	foreach ($response as $responseOrder) {
+		switch($responseOrder['status'])
+		{
+			case 'complete':
+			case 'overpayment':    
+					$post = array(
+					  'responseCode'     => '1',
+					  'reasonCode'     => '1',
+					  'order_id'     => $responseOrder['order_id'],
+					  'amount'     => $responseOrder['amount'],
+					  'total'     => $responseOrder['total'],
+					  'trx_id'     => $responseOrder['memo'],
+					  'url'     => $relayUrl
+					);
+
+				  $linkHTML = sendToCartHelper($post);
+				  if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
+					  $all_hrefs = array_unique($links[1]);
+				  fileRemoveHelper($order_id .'.inv');
+				  $completeOrder = array(
+					  'memo'     => $memo
+				  );
+				  fileSaveToOpenCompleteHelper($completeOrder);
+				  
+				  break;		
+ 			default:
+				break;    
+		}		 
 	}
-			
-	curl_close($ch);
-	return $response;
+
+	return $response;	
 }
 ?>
