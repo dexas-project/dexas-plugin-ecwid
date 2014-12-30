@@ -155,7 +155,6 @@ function doesOrderExist($memoToFind, $order_id)
 
 function completeOrderUser($memo, $order_id)
 {
-	global $relayUrl;
 	global $baseURL;
 	global $relayUrl;
 	global $accountName;
@@ -199,7 +198,7 @@ function completeOrderUser($memo, $order_id)
 					  'responseCode'     => '1',
 					  'reasonCode'     => '1',
 					  'order_id'     => $responseOrder['order_id'],
-					  'amount'     => $responseOrder['amount'],
+					  'amount'     => $responseOrder['total'],
 					  'total'     => $responseOrder['total'],
 					  'trx_id'     => $responseOrder['memo'],
 					  'url'     => $relayUrl
