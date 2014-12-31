@@ -1,4 +1,17 @@
 <?php
+// delete .inv files that are older than 30 days
+function deleteOldOpenOrdersHelper() {
+	if ($handle = opendir(ROOT)) {
+		while (false !== ($file = readdir($handle))) { 
+			$ext = substr($file, -3);
+			if ($ext != 'inv')
+				continue;
+			if((time() - filemtime($file)) > 2592000)
+				unlink($file);
+		}
+		closedir($handle); 
+	}
+}
 function sendToCartHelper($notice)
 {
 	global $login;
@@ -345,7 +358,7 @@ function cronJobUser()
 				break;    
 		}		 
 	}
-
+	deleteOldOpenOrdersHelper();
 	return $response;	
 }
 ?>
