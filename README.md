@@ -14,6 +14,7 @@ Bitshares plugin for Ecwid.
 # Configuration
 
 In config.php:
+
 1. Fill out config.php with the basic information and configure Bitshares Checkout
     - See the readme at https://github.com/sidhujag/bitsharescheckout
 2. set $hashValue - see below
