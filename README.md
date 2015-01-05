@@ -63,4 +63,4 @@ Troubleshooting
 Version
 -------
 - Bitshares plugin version 1.0
-- Tested against OpenCart Version 2.0.1.1
+- Tested against Ecwid Version 16.8.541
