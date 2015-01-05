@@ -17,7 +17,7 @@ In config.php:
 1. Fill out config.php with the basic information and configure Bitshares Checkout
     - See the readme at https://github.com/sidhujag/bitsharescheckout
 2. set $hashValue - see below
-3. set $login - see below
+3. set $login - see below 
 
 In your Ecwid control panel:
 - Click Payment Methods.  Rename any method you are not using to "Bitshares".
