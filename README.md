@@ -6,22 +6,20 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 Bitshares plugin for Ecwid.
 
+# Installation
 
+1. Copy these files into your ecwid root directory
+2. Copy Bitshares Checkout(https://github.com/sidhujag/bitsharescheckout) files into your ecwid root directory, overwrite any existing files.
 
-Instructions
-------------
+# Configuration
+
 In config.php:
-- Set $bitsharesURL to the URL of the bitshares/ folder which you extracted from this plugin.
-- Set $accountName account name of your Bitshares wallet running on the server
-- Set $rpcUser to the RPC user login to Bitshares client
-- Set $rpcPass to the RPC password to Bitshares client
-- Set $rpcPort to the HTTP RPC port to connect to Bitshares client
-- Set $demoMode to TRUE if you want to demo the cart, FALSE for live production. TRUE will allow you to accept any asset for user purchases. IE: BTS for BitUSD purchases
-- $hashValue - see below
-- $login - see below
-	
+- See the readme at https://github.com/sidhujag/bitsharescheckout for a description of config.php for basic settings.
+- set $hashValue - see below
+- set $login - see below
+
 In your Ecwid control panel:
-- Click Payment Methods.  Rename any method you are not using to "Bitshares".  
+- Click Payment Methods.  Rename any method you are not using to "Bitshares".
 - Change Payment Processor to Credit Card: Authorize.net SIM
 - Click Account Details
 - API Login ID: choose something random here and copy it to config.php's $login variable.
@@ -29,7 +27,7 @@ In your Ecwid control panel:
 - MD5 Hash value: choose something random here and copy it to config.php's $hashValue variable.
 - Transaction Type: Authorize.
 - Click Advanced Settings.
-- Type in the url to bitshares/redirect2bitshares.php on your server.
+- Type in the url `http://youwebsiteurl.com/ecwid/bitshares/redirect2bitshares.php` file on your server.
 - Click Save
 - Click Design > CSS Themes
 - Either click "New CSS Theme" or edit your own theme.
