@@ -105,7 +105,7 @@ function sendToCart($order, $responseCode)
 					  'responseCode'     => $responseCode,
 					  'reasonCode'     => $responseCode,
 					  'order_id'     => $order['order_id'],
-					  'amount'     => $order['total'],
+					  'amount'     => $order['amount'],
 					  'total'     => $order['total'],
 					  'trx_id'     => $order['memo'],
 					  'url'     => $relayURL
@@ -203,7 +203,8 @@ function doesOrderExistUser($memoToFind, $order_id)
 }
 function completeOrderUser($order)
 {
-  $response = sendToCart($responseOrder, '1');
+  $order['amount'] = $order['total'];	
+  $response = sendToCart($order, '1');
   if(!array_key_exists('error', $response))
   {
     if(!fileRemoveHelper($order['order_id'] .'.inv'))
@@ -220,7 +221,8 @@ function completeOrderUser($order)
 }
 function cancelOrderUser($order)
 {
-	$response = sendToCart($order, '2');
+  $order['amount'] = $order['total'];	
+  $response = sendToCart($order, '2');
   if(!array_key_exists('error', $response))
   {
     if(!fileRemoveHelper($order['order_id'] .'.inv'))
