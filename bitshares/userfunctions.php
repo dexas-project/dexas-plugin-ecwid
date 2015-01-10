@@ -1,16 +1,18 @@
 <?php
 // delete .inv files that are older than 30 days
 function deleteOldOpenOrdersHelper() {
+  $ret = TRUE;
 	if ($handle = opendir(ROOT)) {
 		while (false !== ($file = readdir($handle))) { 
 			$ext = substr($file, -3);
 			if ($ext != 'inv')
 				continue;
 			if((time() - filemtime($file)) > 2592000)
-				unlink($file);
+				$ret = unlink($file);
 		}
 		closedir($handle); 
 	}
+  return $ret;
 }
 function sendToCartHelper($notice)
 {
@@ -45,6 +47,7 @@ function sendToCartHelper($notice)
 	if ($response === false){
 		debuglog('request to opencart failed');
 		debuglog(curl_error($ch));
+
 	}
 			
 	curl_close($ch);
@@ -59,30 +62,63 @@ function fileSaveToOpenOrdersHelper($dataArray)
   $data .= $dataArray['memo']. PHP_EOL;
 
   // save bitshares invoice data in a file named after the ecwid invoice id
-  file_put_contents(ROOT.$dataArray['order_id'].'.inv', $data);
+  $bytes = file_put_contents(ROOT.$dataArray['order_id'].'.inv', $data);
+  if($bytes === FALSE)
+  {
+    return FALSE;
+  }
+  return TRUE;
 }
 function fileSaveToOpenCompleteHelper($dataArray)
 {
   $data =  date('Y-m-d H:i:s').' '.$dataArray['memo']. PHP_EOL;
 
   // save bitshares invoice data in a file named after the ecwid invoice id
-  file_put_contents(ROOT.'ordercomplete.inv', $data, FILE_APPEND | LOCK_EX);
+  $bytes = file_put_contents(ROOT.'ordercomplete.inv', $data, FILE_APPEND | LOCK_EX);
+  if($bytes === FALSE)
+  {
+    return FALSE;
+  }
+  return TRUE;
 }
 function fileRemoveHelper($invFileName)
 {
+  $ret = TRUE;
   if ($handle = opendir(ROOT)) {
 	  while (false !== ($file = readdir($handle))) { 
 		  $ext = substr($file, -3);
 		  if ($ext != 'inv')
 			  continue;
 		  if($file != $invFileName)
-			continue;
-		  unlink(ROOT.$file);  
+			  continue;
+		  $ret = unlink(ROOT.$file);  
 	  }
 	  closedir($handle); 
-  }      
+  }
+  return $ret;
 }
-function getOpenOrdersHelper()
+function sendToCart($order, $responseCode)
+{
+    global $relayURL;
+    $response = array();
+    $post = array(
+					  'responseCode'     => $responseCode,
+					  'reasonCode'     => $responseCode,
+					  'order_id'     => $order['order_id'],
+					  'amount'     => $order['total'],
+					  'total'     => $order['total'],
+					  'trx_id'     => $order['memo'],
+					  'url'     => $relayURL
+				  );
+
+	  $linkHTML = sendToCartHelper($post);
+	  if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
+		  $all_hrefs = array_unique($links[1]);
+	  $response['url'] = $all_hrefs[0];
+	  return $response;
+	  
+}
+function getOpenOrdersUser()
 {
   $openOrderList = array();
   if ($handle = opendir(ROOT)) {
@@ -112,7 +148,7 @@ function getOpenOrdersHelper()
   return $openOrderList;
 }
 
-function isOrderComplete($memoToFind, $order_id)
+function isOrderCompleteUser($memoToFind, $order_id)
 {
   if ($handle = opendir(ROOT)) {
 	  while (false !== ($file = readdir($handle))) { 
@@ -137,7 +173,7 @@ function isOrderComplete($memoToFind, $order_id)
   }      
   return FALSE;
 }
-function doesOrderExist($memoToFind, $order_id)
+function doesOrderExistUser($memoToFind, $order_id)
 {
 
   if ($handle = opendir(ROOT)) {
@@ -165,120 +201,45 @@ function doesOrderExist($memoToFind, $order_id)
   }      
   return FALSE;
 }
-
-function completeOrderUser($memo, $order_id)
+function completeOrderUser($order)
 {
-	global $baseURL;
-	global $relayUrl;
-	global $accountName;
-	global $rpcUser;
-	global $rpcPass;
-	global $rpcPort;
-	global $demoMode;
-	global $hashSalt;
-	$orderArray = getOrder($memo, $order_id);
-	if(count($orderArray) <= 0)
-	{
-	  $ret = array();
-	  $ret['error'] = 'Could not find this order in the system, please review the Order ID and Memo';
-	  return $ret;
-	}
-
-	if ($orderArray[0]['order_id'] !== $order_id) {
-		$ret = array();
-		$ret['error'] = 'Invalid Order ID';
-		return $ret;
-	}
-	$demo = FALSE;
-	if($demoMode === "1" || $demoMode === 1 || $demoMode === TRUE || $demoMode === "true")
-	{
-		$demo = TRUE;
-	}
-	$response = btsVerifyOpenOrders($orderArray, $accountName, $rpcUser, $rpcPass, $rpcPort, $hashSalt, $demo);
-
-	if(array_key_exists('error', $response))
-	{
-	  $ret = array();
-	  $ret['error'] = 'Could not verify order. Please try again';
-	  return $ret;
-	}	
-	foreach ($response as $responseOrder) {
-		switch($responseOrder['status'])
-		{	
-			case 'overpayment':
-			case 'complete':
-				$post = array(
-					  'responseCode'     => '1',
-					  'reasonCode'     => '1',
-					  'order_id'     => $responseOrder['order_id'],
-					  'amount'     => $responseOrder['total'],
-					  'total'     => $responseOrder['total'],
-					  'trx_id'     => $responseOrder['memo'],
-					  'url'     => $relayUrl
-				  );
-
-				  $linkHTML = sendToCartHelper($post);
-				  if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
-					  $all_hrefs = array_unique($links[1]);
-				  $response['url'] = $all_hrefs[0];
-				  fileRemoveHelper($order_id .'.inv');
-				  $completeOrder = array(
-					  'memo'     => $memo
-				  );
-				  fileSaveToOpenCompleteHelper($completeOrder);
-				  break; 
-			default:
-				break;
-		} 
-	}
-
-	return $response;	  
+  $response = sendToCart($responseOrder, '1');
+  if(!array_key_exists('error', $response))
+  {
+    if(!fileRemoveHelper($order['order_id'] .'.inv'))
+    {
+      $response['error'] = 'There was a problem removing open order from internal database';
+    }
+    
+    if(!fileSaveToOpenCompleteHelper($order))
+    {
+      $response['error'] = 'There was a problem saving completed order to internal database';
+    }
+  }
+  return $response;
 }
-function cancelOrderUser($memo, $order_id)
+function cancelOrderUser($order)
 {
-	global $relayUrl;
-	global $baseURL;
-	$orderArray = getOrder($memo, $order_id);
-	if(count($orderArray) <= 0)
-	{
-	  $ret = array();
-	  $ret['url'] = $baseURL;
-	  return $ret;
-	}
-
-	if ($orderArray[0]['order_id'] !== $order_id) {
-	  $ret = array();
-	  $ret['url'] = $baseURL;
-	  return $ret;
-	}	
-
-	$order = $orderArray[0];
-	$response = array();
-	$post = array(
-		'responseCode'     => '2',
-		'reasonCode'     => '2',
-		'order_id'     => $order['order_id'],
-		'amount'     => $order['total'],
-		'total'     => $order['total'],
-		'trx_id'     => $order['memo'],
-		'url'     => $relayUrl
-	);
-	$linkHTML = sendToCartHelper($post);
-	if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
-		$all_hrefs = array_unique($links[1]);
-	$response['url'] = $all_hrefs[0];
-	fileRemoveHelper($order['order_id'] .'.inv');
+	$response = sendToCart($order, '2');
+  if(!array_key_exists('error', $response))
+  {
+    if(!fileRemoveHelper($order['order_id'] .'.inv'))
+    {
+      $response['error'] = 'There was a problem removing open order from internal database';
+    }
+  }  
 	return $response;
 }
 function createOrderUser()
 {
-	global $relayUrl;
 	global $accountName;
 	global $login;
 	global $hashSalt;
 	if ($_POST['x_login'] != $login) {
+    $ret = array();
 		debuglog('ecwid login does not match that found in config.php');
-		return 'invalid ecwid login';
+    $ret['error'] = 'invalid ecwid login';
+		return $ret;
 	}
 	$total = 	$_POST['x_amount'];
 	$order_id = $_POST['x_invoice_num'];
@@ -292,17 +253,17 @@ function createOrderUser()
 		'memo'     => $memo,
 		'asset'     => $asset
 	);
+  
 	fileSaveToOpenOrdersHelper($openOrder);
-	$post = array(
-		'responseCode'     => '1',
-		'reasonCode'     => '1',
-		'order_id'     => $order_id,
-		'amount'     => 0,
-		'total'     => $total,
-		'trx_id'     => $memo,
-		'url'     => $relayUrl
-	);
-	sendToCartHelper($post);
+  $openOrder['amount'] = 0;
+  $response = sendToCart($openOrder, '1');
+  if(array_key_exists('error', $response))
+  {
+    $ret = array();
+		debuglog('ecwid order creation error: '.$response['error']);
+    $ret['error'] = 'ecwid order creation error: '.$response['error'] ;
+		return $ret;    
+  }
 	$ret = array(
 		'accountName'     => $accountName,
 		'order_id'     => $order_id,
@@ -312,53 +273,6 @@ function createOrderUser()
 }
 function cronJobUser()
 {
-
-	$openOrderList = getOpenOrdersHelper();
-	if(count($openOrderList) <= 0)
-	{
-	  return 'No open orders found!';
-	}
-
-	$demo = FALSE;
-	if($demoMode === "1" || $demoMode === 1 || $demoMode === TRUE || $demoMode === "true")
-	{
-		$demo = TRUE;
-	}
-	$response   = btsVerifyOpenOrders($openOrderList, $accountName, $rpcUser, $rpcPass, $rpcPort, $hashSalt, $demo);
-	if(array_key_exists('error', $response))
-	{
-		return $response;
-	}
-	foreach ($response as $responseOrder) {
-		switch($responseOrder['status'])
-		{
-			case 'complete':
-			case 'overpayment':    
-					$post = array(
-					  'responseCode'     => '1',
-					  'reasonCode'     => '1',
-					  'order_id'     => $responseOrder['order_id'],
-					  'amount'     => $responseOrder['amount'],
-					  'total'     => $responseOrder['total'],
-					  'trx_id'     => $responseOrder['memo'],
-					  'url'     => $relayUrl
-					);
-
-				  $linkHTML = sendToCartHelper($post);
-				  if(preg_match_all('/<a\s+href=["\']([^"\']+)["\']/i', $linkHTML, $links, PREG_PATTERN_ORDER))
-					  $all_hrefs = array_unique($links[1]);
-				  fileRemoveHelper($order_id .'.inv');
-				  $completeOrder = array(
-					  'memo'     => $memo
-				  );
-				  fileSaveToOpenCompleteHelper($completeOrder);
-				  
-				  break;		
- 			default:
-				break;    
-		}		 
-	}
-	deleteOldOpenOrdersHelper();
-	return $response;	
+	return deleteOldOpenOrdersHelper();
 }
 ?>
