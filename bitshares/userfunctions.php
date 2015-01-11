@@ -210,12 +210,18 @@ function completeOrderUser($order)
     if(!fileRemoveHelper($order['order_id'] .'.inv'))
     {
       $response['error'] = 'There was a problem removing open order from internal database';
+      $response['url'] = NULL;
     }
     
     if(!fileSaveToOpenCompleteHelper($order))
     {
       $response['error'] = 'There was a problem saving completed order to internal database';
+      $response['url'] = NULL;
     }
+  }
+  else
+  {
+	$response['url'] = NULL;
   }
   return $response;
 }
@@ -228,7 +234,12 @@ function cancelOrderUser($order)
     if(!fileRemoveHelper($order['order_id'] .'.inv'))
     {
       $response['error'] = 'There was a problem removing open order from internal database';
+      $response['url'] = NULL;
     }
+  }
+  else
+  {
+	$response['url'] = NULL;
   }  
 	return $response;
 }
