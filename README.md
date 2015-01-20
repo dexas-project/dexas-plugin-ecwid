@@ -1,4 +1,4 @@
-<strong>2011-2014 BITSHARES</strong>
+<strong>2011-2015 BITSHARES</strong>
 
 
 
@@ -8,32 +8,32 @@ Bitshares plugin for Ecwid.
 
 # Installation
 
-1. Copy these files into your ecwid root directory
-2. Copy Bitshares Checkout(https://github.com/sidhujag/bitsharescheckout) files into your ecwid root directory, overwrite any existing files.
+1. Copy these files into your ecwid root directory<br />
+2. Copy Bitshares Checkout(https://github.com/sidhujag/bitsharescheckout) files into your ecwid root directory, overwrite any existing files.<br />
 
 # Configuration
 
 In config.php:
 
-1. Fill out config.php with the basic information and configure Bitshares Checkout
-    - See the readme at https://github.com/sidhujag/bitsharescheckout
-2. set $hashValue - see below
-3. set $login - see below 
+1. Fill out config.php with the basic information and configure Bitshares Checkout<br />
+    - See the readme at https://github.com/sidhujag/bitsharescheckout<br />
+2. set $hashValue - see below<br />
+3. set $login - see below <br />
 
 In your Ecwid control panel:
-- Click Payment Methods.  Rename any method you are not using to "Bitshares".
-- Change Payment Processor to Credit Card: Authorize.net SIM
-- Click Account Details
-- API Login ID: choose something random here and copy it to config.php's $login variable.
-- Transaction Key: choose something random
-- MD5 Hash value: choose something random here and copy it to config.php's $hashValue variable.
-- Transaction Type: Authorize.
-- Click Advanced Settings.
-- Type in the url `http://youwebsiteurl.com/ecwid/bitshares/redirect2bitshares.php` file on your server.
-- Click Save
-- Click Design > CSS Themes
-- Either click "New CSS Theme" or edit your own theme.
-- Add this to the text area of your custom theme:
+- Click Payment Methods.  Rename any method you are not using to "Bitshares".<br />
+- Change Payment Processor to Credit Card: Authorize.net SIM<br />
+- Click Account Details<br />
+- API Login ID: choose something random here and copy it to config.php's $login variable.<br />
+- Transaction Key: choose something random<br />
+- MD5 Hash value: choose something random here and copy it to config.php's $hashValue variable.<br />
+- Transaction Type: Authorize.<br />
+- Click Advanced Settings.<br />
+- Type in the url `http://youwebsiteurl.com/ecwid/bitshares/redirect2bitshares.php` file on your server.<br />
+- Click Save<br />
+- Click Design > CSS Themes<br />
+- Either click "New CSS Theme" or edit your own theme.<br />
+- Add this to the text area of your custom theme:<br />
 <pre>
 	/* bitshares checkout image */
 		img.defaultCCImage {
@@ -45,7 +45,7 @@ width:0px;
 height: 30px;
 		}
 </pre>
-- Click Save
+- Click Save<br />
 
 
 Troubleshooting
@@ -62,5 +62,4 @@ Troubleshooting
 
 Version
 -------
-- Bitshares plugin version 1.0
 - Tested against Ecwid Version 16.8.541
