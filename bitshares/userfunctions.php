@@ -16,8 +16,6 @@ function deleteOldOpenOrdersHelper() {
 }
 function sendToCartHelper($notice)
 {
-	global $login;
-	global $hashSalt;
 	$x_response_code = $notice['responseCode']; // 1=approved, 2=declined
 	$x_response_reason_code = $notice['reasonCode']; // 1=approved, 2= declined
 	$x_trans_id = $notice['trx_id'];
@@ -25,7 +23,7 @@ function sendToCartHelper($notice)
 	$x_amount = $notice['amount'];
 	$x_url = $notice['url'];
 	$x_total = $notice['total'];
-	$string = $hashSalt.$login.$x_trans_id.$x_total;
+	$string = hashSalt.login.$x_trans_id.$x_total;
   
 	$x_MD5_Hash = md5($string);
 	$datatopost = array (
@@ -99,7 +97,6 @@ function fileRemoveHelper($invFileName)
 }
 function sendToCart($order, $responseCode)
 {
-    global $relayURL;
     $response = array();
     $post = array(
 					  'responseCode'     => $responseCode,
@@ -108,7 +105,7 @@ function sendToCart($order, $responseCode)
 					  'amount'     => $order['amount'],
 					  'total'     => $order['total'],
 					  'trx_id'     => $order['memo'],
-					  'url'     => $relayURL
+					  'url'     => relayURL
 				  );
 
 	  $linkHTML = sendToCartHelper($post);
@@ -245,10 +242,7 @@ function cancelOrderUser($order)
 }
 function createOrderUser()
 {
-	global $accountName;
-	global $login;
-	global $hashSalt;
-	if ($_POST['x_login'] != $login) {
+	if ($_POST['x_login'] != login) {
     $ret = array();
 		debuglog('ecwid login does not match that found in config.php');
     $ret['error'] = 'invalid ecwid login';
@@ -258,7 +252,7 @@ function createOrderUser()
 	$order_id = $_POST['x_invoice_num'];
 
 	$asset= btsCurrencyToAsset($_POST['x_currency_code']);
-	$hash = btsCreateEHASH($accountName, $order_id, $total,$asset, $hashSalt);
+	$hash = btsCreateEHASH(accountName, $order_id, $total,$asset, hashSalt);
 	$memo = btsCreateMemo($hash);
 	$openOrder = array(
 		'order_id'     => $order_id,
@@ -278,7 +272,7 @@ function createOrderUser()
 		return $ret;    
   }
 	$ret = array(
-		'accountName'     => $accountName,
+		'accountName'     => accountName,
 		'order_id'     => $order_id,
 		'memo'     => $memo
 	);

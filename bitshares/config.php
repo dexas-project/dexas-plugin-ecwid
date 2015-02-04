@@ -1,13 +1,13 @@
 <?php
 define('ROOT', __DIR__ .DIRECTORY_SEPARATOR);
-$relayURL = 'http://app.ecwid.com/authorizenet/6223086';
-$baseURL = 'http://bitshares.ecwid.com/';
-$accountName = 'opencartdemo';
-$rpcUser = 'user';
-$rpcPass = 'pass';
-$rpcPort = 1234;
-$demoMode = TRUE;
-$login = 'ecwidbitshares'; // see README
-$hashSalt = 'ecwidopencardemo'; // see README
-$cronToken = '234343sfsdf23424'; // see README
+define('relayURL', 'http://app.ecwid.com/authorizenet/6223086');
+define('baseURL', 'http://bitshares.ecwid.com/');
+define('accountName', 'opencartdemo');
+define('rpcUser', 'user');
+define('rpcPass', 'pass');
+define('rpcPort', '1234');
+define('demoMode ', TRUE);
+define('login', 'ecwidbitshares');
+define('hashSalt', 'ecwidopencardemo');
+define('cronToken', '234343sfsdf23424');
 ?>
