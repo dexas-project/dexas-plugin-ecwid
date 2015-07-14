@@ -58,6 +58,7 @@ function fileSaveToOpenOrdersHelper($dataArray)
   $data .= $dataArray['total']. PHP_EOL;
   $data .= $dataArray['asset']. PHP_EOL;
   $data .= $dataArray['memo']. PHP_EOL;
+  $data .= $dataArray['date_added']. PHP_EOL;
 
   // save bitshares invoice data in a file named after the ecwid invoice id
   $bytes = file_put_contents(ROOT.$dataArray['order_id'].'.inv', $data);
@@ -130,12 +131,13 @@ function getOpenOrdersUser()
 			$id = fgets($fileHandle);
 			$total = fgets($fileHandle);
 			$asset = fgets($fileHandle);
-			$memo = fgets($memo);
+			$memo = fgets($fileHandle);
+      $date_added = fgets($fileHandle);
 			$newOrder['total'] = trim($total);
 			$newOrder['asset'] = trim($asset);
 			$newOrder['order_id'] = trim($id);
 			$newOrder['memo'] = trim($memo);
-			$newOrder['date_added'] = 0;
+			$newOrder['date_added'] = trim($date_added);
 			array_push($openOrderList,$newOrder);
 			fclose($fileHandle);
 		  }
@@ -186,6 +188,7 @@ function doesOrderExistUser($memoToFind, $order_id)
         $order['total'] = trim(fgets($fileHandle));
         $order['asset'] = trim(fgets($fileHandle));
         $order['memo'] = trim(fgets($fileHandle));
+        $order['date_added'] = trim(fgets($fileHandle));
         fclose($fileHandle);
         if($memoToFind === $order['memo'])
         {	
@@ -250,7 +253,7 @@ function createOrderUser()
 	}
 	$total = 	$_POST['x_amount'];
 	$order_id = $_POST['x_invoice_num'];
-
+  $date_added = now();
 	$asset= btsCurrencyToAsset($_POST['x_currency_code']);
 	$hash = btsCreateEHASH(accountName, $order_id, $total,$asset, hashSalt);
 	$memo = btsCreateMemo($hash);
@@ -258,7 +261,8 @@ function createOrderUser()
 		'order_id'     => $order_id,
 		'total'     => $total,
 		'memo'     => $memo,
-		'asset'     => $asset
+		'asset'     => $asset,
+    'date_added'     => $date_added,
 	);
   
 	fileSaveToOpenOrdersHelper($openOrder);
